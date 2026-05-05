@@ -32,7 +32,7 @@ description: 生成AI笔记（双页签图文笔记）。触发词：AI笔记、
 
 #### JSON 格式
 
-将笔记内容输出为 JSON 文件，保存到 `ai-note-output/_content/xxx_content.json`（JSON 源文件统一放在 `_content/` 子目录中，HTML 输出到 `ai-note-output/` 同级）：
+将笔记内容输出为 JSON 文件，保存到 `~/ai-note-output/_content/xxx_content.json`（JSON 源文件统一放在 `_content/` 子目录中，HTML 输出到 `~/ai-note-output/` 同级）。输出目录可根据需要替换，如 `D:\ai-note-output\`。
 
 ```json
 {
@@ -69,20 +69,20 @@ description: 生成AI笔记（双页签图文笔记）。触发词：AI笔记、
 #### 组装 HTML
 
 ```bash
-python scripts/build.py "ai-note-output/_content/xxx_content.json"
+python scripts/build.py "~/ai-note-output/_content/xxx_content.json"
 # 或批量构建目录下所有 JSON：
-python scripts/build.py "ai-note-output/_content/"
+python scripts/build.py "~/ai-note-output/_content/"
 ```
 
 - 脚本自动读取内置模板（`skills/ai-note-2.0/assets/template.html`）
 - 替换 `<!-- NOTE_TITLE -->`、`<!-- TEXT_CONTENT -->` 等 6 个占位符
-- 输出到 `ai-note-output/xxx.html`（JSON 在 `_content/` 子目录中时，HTML 输出到父目录）
+- 输出到 `~/ai-note-output/xxx.html`（JSON 在 `_content/` 子目录中时，HTML 输出到父目录）
 
 #### 自动校验（必做步骤）
 
 ```bash
-python scripts/validate.py "ai-note-output/输出文件名.html"
-python scripts/validate.py --e2e "ai-note-output/输出文件名.html"
+python scripts/validate.py "~/ai-note-output/输出文件名.html"
+python scripts/validate.py --e2e "~/ai-note-output/输出文件名.html"
 ```
 
 校验项：
