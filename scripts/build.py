@@ -19,7 +19,7 @@ def find_template():
     # 1. skill 目录（开发环境）
     skill_path = os.path.join(
         os.path.expanduser('~'),
-        '.claude', 'skills', 'ai-note2.0', 'assets', 'template.html'
+        '.claude', 'skills', 'ai-note-2.0', 'assets', 'template.html'
     )
     if os.path.exists(skill_path):
         return skill_path
