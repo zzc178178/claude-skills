@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG 从 Demo 到生产：四大关键环节完整拆解 - AI 笔记</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+/* ===== Reset & Base ===== */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:16px; scroll-behavior:smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+  background: #f0f2f5;
+  color: #1a2332;
+  line-height: 1.7;
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* ===== Container ===== */
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 16px 90px;
+}
+
+/* ===== Fixed Tab Bottom Bar ===== */
+.tab-bar-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 16px 12px;
+  background: linear-gradient(to top, #f0f2f5 70%, transparent);
+  pointer-events: none;
+}
+.tab-bar-fixed .tab-nav {
+  max-width: 860px;
+  margin: 0 auto;
+  pointer-events: auto;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.04);
+}
+
+/* ===== Header ===== */
+.note-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.note-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+}
+.note-header::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -10%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+}
+.note-tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  padding: 3px 10px;
+  border-radius: 16px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.note-header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+  line-height: 1.3;
+}
+.note-header .subtitle {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+  font-weight: 400;
+}
+/* note-author removed — only note-source is used */
+
+/* ===== Source Link ===== */
+.note-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+.source-label {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+}
+.source-link {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,0.25);
+  padding-bottom: 1px;
+  transition: border-color 0.2s;
+  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.source-link:hover {
+  border-bottom-color: rgba(255,255,255,0.7);
+  color: #fff;
+}
+
+/* ===== Tab Navigation ===== */
+.tab-nav {
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border: 1px solid #eef0f4;
+}
+.tab-btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #8896ab;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  font-family: inherit;
+}
+.tab-copy-btn {
+  padding: 14px 18px;
+  border: none;
+  border-left: 1px solid #eef0f4;
+  background: transparent;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #8896ab;
+  font-family: inherit;
+  transition: all 0.3s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tab-copy-btn:hover { color: #667eea; background: #f8f9fb; }
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 3px 3px 0 0;
+  transition: width 0.3s ease;
+}
+.tab-btn:hover {
+  color: #4a5a72;
+  background: #f8f9fb;
+}
+.tab-btn.active {
+  color: #667eea;
+}
+.tab-btn.active::after {
+  width: 60%;
+}
+.tab-btn .icon { margin-right: 6px; }
+
+/* ===== Tab Content ===== */
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.35s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Text Tab ===== */
+.text-tab { }
+
+/* ===== Cards ===== */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border: 1px solid #eef0f4;
+  transition: box-shadow 0.2s;
+}
+
+/* ===== Content Styles ===== */
+.text-content h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1a2332;
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f2f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.text-content h2:first-child { margin-top: 0; }
+.text-content h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #2d3e5c;
+  margin: 16px 0 8px;
+}
+.text-content p {
+  margin-bottom: 10px;
+  color: #3a4a62;
+  line-height: 1.8;
+}
+.text-content ul, .text-content ol {
+  margin: 8px 0 12px 20px;
+  color: #3a4a62;
+}
+.text-content li { margin-bottom: 6px; }
+.text-content strong { color: #1a2332; }
+
+/* ===== Highlight Tags ===== */
+.tag-blue { background:#e8f0fe; color:#1a5fb4; padding:2px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; }
+.tag-green { background:#e6f7ed; color:#1a8c4a; padding:2px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; }
+.tag-orange { background:#fef4e8; color:#b45a1a; padding:2px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; }
+.tag-purple { background:#f0ebff; color:#6b3fa0; padding:2px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; }
+.tag-red { background:#fee8e8; color:#b41a1a; padding:2px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; }
+
+/* ===== Highlight Box ===== */
+.highlight-box {
+  background: #f0f4fe;
+  border-left: 4px solid #667eea;
+  padding: 14px 18px;
+  border-radius: 0 12px 12px 0;
+  margin: 12px 0;
+}
+.highlight-box.warn { background: #fef4e8; border-left-color: #f59e0b; }
+.highlight-box.success { background: #e6f7ed; border-left-color: #22c55e; }
+.highlight-box.info { background: #eef2ff; border-left-color: #6366f1; }
+
+/* ===== Quote ===== */
+blockquote {
+  background: #f8f9fb;
+  border-left: 3px solid #d0d5dd;
+  padding: 10px 16px;
+  margin: 12px 0;
+  border-radius: 0 8px 8px 0;
+  color: #5a6a7e;
+  font-style: italic;
+}
+
+/* ===== Text Tab Cards REMOVED — 文字页签无卡片，一切归文字 ===== */
+
+/* ===== Code ===== */
+code {
+  background: #f0f2f5;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  color: #e74c3c;
+}
+pre {
+  background: #1a2332;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+pre code {
+  background: transparent;
+  color: #e8e8e8;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+/* ===== Table ===== */
+.table-wrap {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+th {
+  background: #f0f4fe;
+  color: #1a2332;
+  font-weight: 600;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 2px solid #dce3f0;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #eef0f4;
+  color: #3a4a62;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f8f9fb; }
+
+/* ===== Footer Tags ===== */
+.footer-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eef0f4;
+}
+
+/* ===== DIAGRAM TAB ===== */
+.diagram-tab { }
+
+.diagram-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border: 1px solid #eef0f4;
+}
+.diagram-section h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a2332;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.diagram-section .diagram-desc {
+  font-size: 0.85rem;
+  color: #5a6a7e;
+  margin-bottom: 16px;
+}
+.diagram-section .mermaid {
+  text-align: center;
+  margin: 12px 0;
+}
+.diagram-section .mermaid svg {
+  max-width: 100%;
+}
+
+/* ===== CSS Tree (复用树形结构：选型/分类/层级) ===== */
+.tree-wrap {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  padding: 8px 0;
+}
+.tree-wrap ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.tree-wrap li {
+  position: relative;
+  padding: 3px 0 3px 28px;
+  margin: 0;
+}
+.tree-wrap > ul > li {
+  padding-left: 0;
+}
+.tree-wrap > ul > li > .node-root {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.tree-wrap ul ul {
+  position: relative;
+  margin-left: 14px;
+  border-left: 2px solid #d0d5e0;
+}
+.tree-wrap ul ul li::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 12px;
+  width: 20px;
+  height: 0;
+  border-top: 2px solid #d0d5e0;
+}
+.tree-wrap ul ul li:last-child::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 12px;
+  bottom: 0;
+  width: 2px;
+  background: #f0f2f5;
+}
+.node-label {
+  background: #f0f4fe;
+  color: #1a5fb4;
+  padding: 2px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  font-weight: 500;
+  font-size: 0.88rem;
+}
+.node-label .arrow {
+  color: #a0aec0;
+  margin: 0 4px;
+  font-weight: 300;
+}
+.node-label .tree-tag {
+  font-size: 0.75rem;
+  padding: 1px 8px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+/* ===== 模式②③：三列网格卡片 ===== */
+.diagram-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+.grid-card {
+  background: #f8f9fb;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #eef0f4;
+}
+.grid-card-icon { text-align: center; border-width: 2px; }
+.grid-card-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #667eea;
+  margin-bottom: 4px;
+}
+.grid-card-emoji { font-size: 1.8rem; margin: 4px 0; }
+.grid-card-title { font-weight: 700; font-size: 1rem; color: #1a2332; margin: 6px 0 4px; }
+.grid-card-sub { font-size: 0.8rem; color: #4a5a72; margin: 4px 0; }
+.grid-card-desc { font-size: 0.85rem; color: #4a5a72; line-height: 1.6; }
+
+/* ===== 模式④：纵向步骤卡片（带序号圆形） ===== */
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 12px;
+  padding: 14px 18px;
+  border: 1px solid;
+}
+.step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.step-content { flex: 1; }
+.step-title { font-weight: 700; color: #1a2332; font-size: 0.95rem; }
+.step-tag { font-size: 0.75rem; font-weight: 600; margin-left: 6px; }
+.step-desc { font-size: 0.85rem; color: #4a5a72; margin-top: 2px; }
+
+/* ===== 模式⑥：两列标签卡片 ===== */
+.tag-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.tag-card {
+  background: #f8f9fb;
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid #eef0f4;
+}
+.tag-card-title { font-weight: 700; font-size: 0.95rem; color: #1a2332; margin-bottom: 6px; }
+.tag-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* ===== 效果/信息条 ===== */
+.effect-bar {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #e6f7ed;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #1a8c4a;
+}
+.info-bar {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f8f9fb;
+  border-radius: 10px;
+  border: 1px solid #eef0f4;
+  font-size: 0.85rem;
+  color: #4a5a72;
+}
+.bar-sep { color: #d0d5dd; margin: 0 6px; }
+
+/* ===== Diagram Cards ===== */
+.diagram-card {
+  border-radius: 12px;
+  padding: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.diagram-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+}
+
+/* ===== CSS Flow Nodes ===== */
+.css-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 16px 0;
+}
+.css-flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.css-node {
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  transition: transform 0.15s;
+}
+.css-node:hover { transform: scale(1.03); }
+.css-node.blue { background:#e8f0fe; border:2px solid #667eea; color:#1a5fb4; }
+.css-node.green { background:#e6f7ed; border:2px solid #22c55e; color:#1a8c4a; }
+.css-node.orange { background:#fef4e8; border:2px solid #f59e0b; color:#b45a1a; }
+.css-node.purple { background:#f0ebff; border:2px solid #7c3aed; color:#6b3fa0; }
+.css-node.pink { background:#fdf2f8; border:2px solid #ec4899; color:#b91c6e; }
+.css-arrow { font-size:1.3rem; color:#a0aec0; font-weight:300; }
+
+/* ===== Timeline ===== */
+.timeline {
+  position: relative;
+  padding: 12px 0;
+  margin: 12px 0;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e0e4ec;
+}
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.timeline-marker {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.timeline-content {
+  flex: 1;
+  background: #f8f9fb;
+  border-radius: 12px;
+  padding: 14px 18px;
+}
+.timeline-content .tl-title { font-weight:600; color:#1a2332; margin-bottom:4px; }
+.timeline-content .tl-desc { font-size:0.85rem; color:#4a5a72; }
+
+/* ===== My Note Tab ===== */
+.mynote-tab .card { padding:0; overflow:hidden; }
+.mynote-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 20px;
+  border-bottom:1px solid #eef0f4;
+  font-size:0.85rem;
+  color:#5a6a7e;
+}
+.mynote-header span:first-child{font-weight:600;color:#1a2332;font-size:0.95rem}
+.mynote-hint{font-size:0.78rem;color:#a0aec0}
+.mynote-editor{
+  padding:20px 24px;
+  min-height:300px;
+  line-height:1.8;
+  color:#1a2332;
+  font-size:0.95rem;
+  outline:none;
+  transition:background 0.15s;
+}
+.mynote-editor:focus{background:#fafbfc}
+.mynote-editor:empty::before{
+  content:'在这里写下你的总结或想法…';
+  color:#c0c8d8;
+  font-style:italic;
+}
+.mynote-editor h1,.mynote-editor h2,.mynote-editor h3{margin:12px 0 6px;font-weight:600;color:#1a2332}
+.mynote-editor h1{font-size:1.3rem}
+.mynote-editor h2{font-size:1.15rem}
+.mynote-editor h3{font-size:1.05rem}
+.mynote-editor p{margin-bottom:6px}
+.mynote-editor ul,.mynote-editor ol{padding-left:20px;margin:4px 0}
+.mynote-editor code{
+  background:#f0f2f5;
+  padding:1px 6px;
+  border-radius:4px;
+  font-size:0.85em;
+  font-family:monospace;
+  color:#e74c3c;
+}
+.mynote-editor blockquote{
+  border-left:3px solid #667eea;
+  padding:6px 14px;
+  margin:8px 0;
+  background:#f8f9fb;
+  border-radius:0 6px 6px 0;
+  color:#4a5a72;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  .container { padding: 12px 10px 30px; }
+  .note-header { padding: 24px 18px; }
+  .note-header h1 { font-size: 1.4rem; }
+  .card { padding: 18px 16px; }
+  .concept-grid { grid-template-columns: 1fr; }
+  .tab-btn { font-size: 0.85rem; padding: 12px 10px; }
+  .css-node { font-size: 0.75rem; padding: 6px 12px; white-space: normal; }
+  .diagram-section { padding: 18px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ===== Header ===== -->
+  <div class="note-header">
+    <div class="note-tag">RAG实战</div>
+    <h1>RAG 从 Demo 到生产：四大关键环节完整拆解</h1>
+    <div class="subtitle">鹅厂面试官追问：5000 份文档如何稳定答对？</div>
+    <div class="note-source">
+      <span class="source-label">原文来源</span>
+      <a class="source-link" href="https://mp.weixin.qq.com/s/YNcfSN0uv1c1LsLPzgB0jw" target="_blank">吴师兄学大模型 · 公众号</a>
+    </div>
+  </div>
+
+  <!-- ===== Fixed Tab Navigation ===== -->
+  <div class="tab-bar-fixed">
+    <div class="tab-nav" role="tablist">
+      <button class="tab-btn active" data-tab="text" role="tab" aria-selected="true">
+        <span class="icon">📝</span>文字笔记
+      </button>
+      <button class="tab-btn" data-tab="diagram" role="tab" aria-selected="false">
+        <span class="icon">🎨</span>图解
+      </button>
+      <button class="tab-btn" data-tab="mynote" role="tab" aria-selected="false">
+        <span class="icon">✏️</span>随手记
+      </button>
+      <button class="tab-copy-btn" onclick="event.stopPropagation();copyAsMarkdown()" title="复制文字为 Markdown">📋</button>
+    </div>
+  </div>
+
+  <!-- ===== Text Tab ===== -->
+  <div class="tab-content text-tab active" id="tab-text" role="tabpanel">
+    <div class="card">
+      <div class="text-content">
+        <h2>📌 核心观点</h2>
+        <p>RAG 最难的不是跑通 Demo——<strong>Demo 只完成了 10% 的工作</strong>。真正让 RAG 在 5000 份文档中稳定答对，需要经历数据准备、检索召回、Query 理解、生成控制四大环节的系统性优化。</p>
+
+        <div class="highlight-box info">
+          <strong>核心矛盾</strong>：Demo 阶段用几份文档跑通 pipeline 很容易，但扩展到生产环境后，chunk 碎片化、检索噪音、意图误解、LLM 幻觉等问题逐一暴露。
+        </div>
+
+        <h2>📦 数据准备：知识库质量决定 RAG 上限</h2>
+        <h3>常见错误</h3>
+        <p>直接按固定字数切分 chunk（如 512 tokens），导致<strong>语义被切断</strong>，一个完整段落可能被拆到两个 chunk 中，检索结果碎片化。</p>
+
+        <h3>优化方案</h3>
+        <ul>
+          <li><strong>结构化切分</strong>：按文档逻辑结构（标题、段落、表格、列表）而非固定字节切分</li>
+          <li><strong>上下文路径</strong>：每个 chunk 补充层级信息，如 <code>产品名 &gt; 章节 &gt; 条款</code></li>
+          <li><strong>动态窗口</strong>：检索时返回命中 chunk 前后各一个 chunk，补充上下文</li>
+        </ul>
+
+        <div class="highlight-box success">
+          <strong>效果</strong>：召回准确率从 0.62 提升至 0.84
+        </div>
+
+        <h2>🔍 检索召回：不是找最相似的，是找最有用的</h2>
+        <h3>挑战</h3>
+        <p>Embedding 模型选择、召回阈值设定、纯语义检索的关键词精确匹配缺陷。</p>
+
+        <h3>解决方案</h3>
+        <ul>
+          <li>中文场景使用 <strong>BGE-large-zh</strong> 替代 OpenAI 的 text-embedding-ada-002，语义理解更准确</li>
+          <li>通过测试选定最佳召回阈值 <strong>0.72</strong>，兼顾召回率与精度</li>
+          <li>采用 <strong>向量检索 + BM25 混合检索</strong>，再用 <strong>Reranker 模型</strong> 重新排序</li>
+        </ul>
+
+        <div class="highlight-box success">
+          <strong>效果</strong>：召回准确率从 0.84 提升至 0.91
+        </div>
+
+        <h2>🧠 Query 理解：用户问的，不一定是系统该搜的</h2>
+        <h3>问题</h3>
+        <p>用户问题类型多样（事实查询、计算求解、NL2SQL、闲聊等），统一丢进向量检索会导致<strong>答非所问</strong>。</p>
+
+        <h3>三级意图识别路由</h3>
+        <ul>
+          <li><strong>规则匹配</strong>：关键词/正则匹配，覆盖大部分常见问题，<span class="tag-green">零延迟</span></li>
+          <li><strong>BERT 分类器</strong>：模型分类，毫秒级响应，<span class="tag-purple">高准确率</span></li>
+          <li><strong>LLM 兜底</strong>：处理疑难 case，<span class="tag-orange">最强理解</span>但成本高</li>
+        </ul>
+
+        <p>根据意图路由到不同模块：<span class="tag-blue">知识问答→混合检索</span> <span class="tag-green">计算→计算模块</span> <span class="tag-purple">数据查询→NL2SQL</span> <span class="tag-orange">闲聊→通用对话</span></p>
+
+        <h3>高级技巧</h3>
+        <p><strong>多索引路由</strong>：按主题分区索引，检索时只搜索相关分区，提高精度并降低延迟。</p>
+
+        <h2>✍️ 生成阶段：RAG 不是简单的"检索+生成"</h2>
+        <h3>常见问题</h3>
+        <p>LLM 自由发挥、模棱两可、答非所问。</p>
+
+        <h3>优化方案</h3>
+        <ul>
+          <li><strong>强约束 Prompt</strong>：要求严格基于检索文档回答，禁止模糊表达，要求注明来源</li>
+          <li><strong>置信度评估</strong>：LLM 输出时附带 1-5 分置信度分数，低于 3 分自动触发二次检索或扩大检索范围</li>
+        </ul>
+
+        <div class="highlight-box success">
+          <strong>效果</strong>：答非所问投诉率从 18% 降到 7%
+        </div>
+
+        <h2>🔧 系统性工程协同</h2>
+        <p>RAG 是端到端系统工程，每一细节都需要测试与调优：</p>
+        <ul>
+          <li><strong>文档增量更新</strong>：知识库变更时的同步机制</li>
+          <li><strong>检索性能</strong>：Milvus 分区索引，只检索相关分区</li>
+          <li><strong>响应速度</strong>：高频 query 缓存、流式输出</li>
+          <li><strong>监控指标</strong>：召回准确率、投诉率、响应延迟持续跟踪</li>
+        </ul>
+
+        <h2>💡 面试回答框架</h2>
+        <p>面试中聊 RAG 难点，建议按四个层次组织：</p>
+        <ol>
+          <li><strong>系统性思维</strong> → RAG 是端到端工程，不止是"检索+生成"</li>
+          <li><strong>具体坑点</strong> → chunk 碎片化、检索噪音、意图误解、LLM 幻觉</li>
+          <li><strong>量化指标</strong> → 召回率 0.62→0.84→0.91，投诉率 18%→7%</li>
+          <li><strong>工程能力</strong> → 增量更新、分区索引、缓存、监控</li>
+        </ol>
+
+        <div class="footer-tags">
+          <span class="tag-blue">RAG</span>
+          <span class="tag-green">生产部署</span>
+          <span class="tag-purple">检索增强生成</span>
+          <span class="tag-orange">Intent Routing</span>
+          <span class="tag-blue">置信度评估</span>
+          <span class="tag-green">Hybrid Search</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Diagram Tab ===== -->
+  <div class="tab-content diagram-tab" id="tab-diagram" role="tabpanel">
+    <!-- Diagram 1: RAG 系统整体架构 -->
+    <div class="diagram-section">
+      <h3>🏗️ RAG 生产系统整体架构</h3>
+      <div class="diagram-desc">从用户 Query 到最终回答的完整链路，含反馈回路</div>
+      <div class="mermaid">
+flowchart TB
+    User[用户Query] --> QI[Query理解]
+
+    QI --> Route{三级意图路由}
+    Route -->|知识问答| Search[混合检索]
+    Route -->|计算求解| Calc[计算模块]
+    Route -->|数据查询| SQL[NL2SQL]
+    Route -->|闲聊| Chat[通用对话]
+
+    subgraph "检索层"
+        Search --> Vec[(向量检索<br>BGE-large-zh)]
+        Search --> BM[(BM25 关键词)]
+        Vec --> RR[Reranker 重排序]
+        BM --> RR
+    end
+
+    subgraph "知识库层"
+        Doc[(文档库)] --> Chunk[结构化切分]
+        Chunk --> Path[上下文路径标注]
+        Path --> Index[(分区索引)]
+    end
+
+    RR --> Gen[LLM 生成]
+    Index -.-> Search
+    Gen --> Score{置信度 1-5}
+    Score -->|>=3 分| Ans[最终回答]
+    Score -->|<3 分| Retry[二次检索/扩范围]
+    Retry --> Search
+      </div>
+    </div>
+
+    <!-- Diagram 2: 数据准备三大策略 -->
+    <div class="diagram-section">
+      <h3>📦 数据准备：三大优化策略</h3>
+      <div class="diagram-desc">从固定字数切分到结构化智能分块</div>
+      <div class="diagram-grid-3">
+        <div class="grid-card">
+          <div class="grid-card-label">策略一</div>
+          <div class="grid-card-title">📄 结构化切分</div>
+          <div class="grid-card-desc">按文档逻辑结构（标题、段落、表格、列表）切分，而非固定 512 token</div>
+        </div>
+        <div class="grid-card">
+          <div class="grid-card-label">策略二</div>
+          <div class="grid-card-title">🔗 上下文路径</div>
+          <div class="grid-card-desc">每个 chunk 补充"产品名&gt;章节&gt;条款"层级路径，保留语义上下文</div>
+        </div>
+        <div class="grid-card">
+          <div class="grid-card-label">策略三</div>
+          <div class="grid-card-title">🔲 动态窗口</div>
+          <div class="grid-card-desc">检索命中时返回前后各一个 chunk，填补上下文空白</div>
+        </div>
+      </div>
+      <div class="effect-bar">📊 效果：召回准确率从 0.62 提升至 0.84</div>
+    </div>
+
+    <!-- Diagram 3: 混合检索 -->
+    <div class="diagram-section">
+      <h3>🎯 混合检索：三重保障</h3>
+      <div class="diagram-desc">向量语义 + 关键词精确 + Reranker 重排序</div>
+      <div class="diagram-grid-3">
+        <div class="grid-card grid-card-icon">
+          <div class="grid-card-label">方法一</div>
+          <div class="grid-card-emoji">🧮</div>
+          <div class="grid-card-title">向量检索</div>
+          <div class="grid-card-sub">BGE-large-zh 模型</div>
+          <div class="grid-card-desc">语义相似度匹配，模糊搜索</div>
+        </div>
+        <div class="grid-card grid-card-icon">
+          <div class="grid-card-label">方法二</div>
+          <div class="grid-card-emoji">🔑</div>
+          <div class="grid-card-title">BM25 关键词</div>
+          <div class="grid-card-sub">精确匹配</div>
+          <div class="grid-card-desc">关键词精确命中，弥补语义模糊</div>
+        </div>
+        <div class="grid-card grid-card-icon">
+          <div class="grid-card-label">方法三</div>
+          <div class="grid-card-emoji">⚖️</div>
+          <div class="grid-card-title">Reranker</div>
+          <div class="grid-card-sub">重排序模型</div>
+          <div class="grid-card-desc">混合结果统一排序，精排 Top-K</div>
+        </div>
+      </div>
+      <div class="info-bar">
+        <span>召回阈值 0.72</span><span class="bar-sep">|</span>
+        <span>语义模糊→向量</span><span class="bar-sep">|</span>
+        <span>关键词精确→BM25</span>
+      </div>
+      <div class="effect-bar">📊 效果：召回准确率从 0.84 提升至 0.91</div>
+    </div>
+
+    <!-- Diagram 4: Query 理解三级路由 -->
+    <div class="diagram-section">
+      <h3>🧠 Query 理解：三级意图识别路由</h3>
+      <div class="diagram-desc">规则匹配 → BERT 分类器 → LLM 兜底，层层递进</div>
+      <div class="step-list">
+        <div class="step-item" style="background:#e8f0fe;">
+          <div class="step-circle" style="background:#667eea;">1</div>
+          <div class="step-content">
+            <div class="step-title">第一级 · 规则匹配 <span class="step-tag" style="color:#667eea;">⚡ 零延迟</span></div>
+            <div class="step-desc">关键词/正则覆盖大部分常见问题，兜住常见 query</div>
+          </div>
+        </div>
+        <div class="step-item" style="background:#f0ebff;">
+          <div class="step-circle" style="background:#7c3aed;">2</div>
+          <div class="step-content">
+            <div class="step-title">第二级 · BERT 分类器 <span class="step-tag" style="color:#7c3aed;">⏱ 毫秒级</span></div>
+            <div class="step-desc">模型分类意图，高准确率，覆盖大多数场景</div>
+          </div>
+        </div>
+        <div class="step-item" style="background:#fef4e8;">
+          <div class="step-circle" style="background:#f59e0b;">3</div>
+          <div class="step-content">
+            <div class="step-title">第三级 · LLM 兜底 <span class="step-tag" style="color:#f59e0b;">🧠 最强理解</span></div>
+            <div class="step-desc">处理疑难 case，理解复杂语义，但成本较高</div>
+          </div>
+        </div>
+      </div>
+      <div class="info-bar" style="text-align:center;">
+        <strong>🔀 路由分发：</strong>知识问答→混合检索 &nbsp;|&nbsp; 计算求解→计算模块 &nbsp;|&nbsp; 数据查询→NL2SQL &nbsp;|&nbsp; 闲聊→通用对话
+      </div>
+    </div>
+
+    <!-- Diagram 5: 工程协同 -->
+    <div class="diagram-section">
+      <h3>⚡ 工程协同：系统性优化</h3>
+      <div class="diagram-desc">RAG 生产落地的关键工程细节</div>
+      <div class="tag-grid-2">
+        <div class="tag-card">
+          <div class="tag-card-title">📤 文档管理</div>
+          <div class="tag-group">
+            <span class="tag-pill tag-blue">增量更新脚本</span>
+            <span class="tag-pill tag-blue">差异化 embedding</span>
+          </div>
+        </div>
+        <div class="tag-card">
+          <div class="tag-card-title">🎯 检索性能</div>
+          <div class="tag-group">
+            <span class="tag-pill tag-purple">Milvus 分区索引</span>
+            <span class="tag-pill tag-purple">只检索相关分区</span>
+          </div>
+        </div>
+        <div class="tag-card">
+          <div class="tag-card-title">⚡ 响应速度</div>
+          <div class="tag-group">
+            <span class="tag-pill tag-green">高频 query 缓存</span>
+            <span class="tag-pill tag-green">流式输出</span>
+          </div>
+        </div>
+        <div class="tag-card">
+          <div class="tag-card-title">📊 监控指标</div>
+          <div class="tag-group">
+            <span class="tag-pill tag-orange">召回准确率</span>
+            <span class="tag-pill tag-orange">投诉率</span>
+            <span class="tag-pill tag-orange">响应延迟</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Diagram 6: 面试回答框架 -->
+    <div class="diagram-section">
+      <h3>🌳 面试回答框架</h3>
+      <div class="diagram-desc">聊 RAG 难点，按四个层次组织回答</div>
+      <div class="tree-wrap">
+        <ul>
+          <li><span class="node-root">RAG 生产落地难点</span>
+            <ul>
+              <li><span class="node-label">🌐 系统性思维</span> <span class="tree-tag tag-blue">宏观视角</span></li>
+              <li><span class="node-label">🔍 具体坑点 <span class="arrow">→</span> Chunk 碎片化、检索噪音、意图误解、LLM 幻觉</span></li>
+              <li><span class="node-label">📊 量化指标 <span class="arrow">→</span> 召回率 0.62→0.84→0.91，投诉率 18%→7%</span></li>
+              <li><span class="node-label">⚙️ 工程能力 <span class="arrow">→</span> 增量更新、分区索引、缓存、监控</span></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== My Note Tab (blank, user fills in) ===== -->
+  <div class="tab-content mynote-tab" id="tab-mynote" role="tabpanel">
+    <div class="card">
+      <div class="mynote-header">
+        <span>📝 我的笔记</span>
+        <span class="mynote-hint">在此记录你的总结和想法</span>
+      </div>
+      <div class="mynote-editor" id="mynoteEditor" contenteditable="true" spellcheck="true">
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: false,
+  securityLevel: 'loose',
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef2ff',
+    primaryTextColor: '#1a2332',
+    primaryBorderColor: '#667eea',
+    lineColor: '#a0aec0',
+    secondaryColor: '#f8f9fb',
+    tertiaryColor: '#ffffff',
+    fontSize: '14px'
+  },
+  flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' }
+});
+
+function renderDiagrams() {
+  document.querySelectorAll('#tab-diagram .mermaid').forEach((el, idx) => {
+    if (el.querySelector('svg')) return;
+    const code = el.textContent.trim();
+    const id = 'mermaid-' + Date.now() + '-' + idx;
+    const retryCount = parseInt(el.dataset.retry || '0');
+    mermaid.render(id, code).then(({ svg }) => {
+      el.innerHTML = svg;
+    }).catch(err => {
+      console.error('Mermaid render error (attempt ' + (retryCount + 1) + '):', err);
+      if (retryCount < 1) {
+        // 自动重试一次（避免临时性加载失败）
+        el.dataset.retry = '1';
+        setTimeout(() => renderDiagrams(), 500);
+      } else {
+        el.innerHTML = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;text-align:center;color:#dc2626;font-size:0.9rem;">⚠️ 图表渲染失败</div>';
+      }
+    });
+  });
+}
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    this.setAttribute('aria-selected','true');
+    const tabId = this.getAttribute('data-tab');
+    document.getElementById('tab-' + tabId).classList.add('active');
+
+    if (tabId === 'diagram') {
+      setTimeout(renderDiagrams, 150);
+    }
+    if (tabId === 'mynote') {
+      loadMyNote();
+    }
+  });
+});
+
+// ===== Copy as Markdown =====
+function copyAsMarkdown(){
+  const root = document.querySelector('#tab-text .text-content');
+  if(!root) return;
+  let md = '';
+  for(const el of root.children){
+    md += htmlToMd(el) + '\n\n';
+  }
+  md = md.trim();
+  
+  // Fallback: 如果 Markdown 转换结果为空，降级复制纯文本
+  if(!md){
+    const plain = root.innerText.trim();
+    navigator.clipboard.writeText(plain).then(() => {
+      const btn = document.querySelector('.tab-copy-btn');
+      btn.textContent = '📋';
+      setTimeout(() => btn.textContent = '📋', 1500);
+    }).catch(() => alert('复制失败'));
+    return;
+  }
+  
+  navigator.clipboard.writeText(md).then(()=>{
+    const btn = document.querySelector('.tab-copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✅';
+    setTimeout(() => btn.textContent = orig, 1500);
+  }).catch(() => {
+    // 二次降级: clipboard API 失败，回退到纯文本
+    const plain = root.innerText.trim();
+    navigator.clipboard.writeText(plain).catch(() => alert('复制失败，请手动选中文字复制'));
+  });
+}
+
+function htmlToMd(el){
+  const tag = el.tagName.toLowerCase();
+  const text = el.textContent.trim();
+  if(!text) return '';
+
+  // Headings
+  if(tag === 'h2') return '## ' + text;
+  if(tag === 'h3') return '### ' + text;
+  if(tag === 'h4') return '#### ' + text;
+
+  // Paragraph
+  if(tag === 'p') return inlineMd(el);
+
+  // List item — extract text content excluding nested lists
+  if(tag === 'li'){
+    return Array.from(el.childNodes)
+      .filter(n => n.nodeType !== 1 || (n.tagName !== 'UL' && n.tagName !== 'OL'))
+      .map(n => {
+        if(n.nodeType === 3) return n.textContent.trim();
+        if(n.nodeType === 1) return inlineMd(n);
+        return '';
+      })
+      .join('').trim();
+  }
+
+  // Unordered list — support nested lists with indentation
+  if(tag === 'ul'){
+    return Array.from(el.children).map(li => {
+      const liText = htmlToMd(li);
+      let result = liText ? '- ' + liText : '';
+      li.querySelectorAll(':scope > ul, :scope > ol').forEach(nested => {
+        const nestedMd = htmlToMd(nested).split('\n').map(l => '  ' + l).join('\n');
+        result += (result ? '\n' : '') + nestedMd;
+      });
+      return result;
+    }).join('\n');
+  }
+
+  // Ordered list — support nested lists with indentation
+  if(tag === 'ol'){
+    return Array.from(el.children).map((li, i) => {
+      const liText = htmlToMd(li);
+      let result = liText ? (i+1) + '. ' + liText : (i+1) + '.';
+      li.querySelectorAll(':scope > ul, :scope > ol').forEach(nested => {
+        const nestedMd = htmlToMd(nested).split('\n').map(l => '  ' + l).join('\n');
+        result += '\n' + nestedMd;
+      });
+      return result;
+    }).join('\n');
+  }
+
+  // Blockquote
+  if(tag === 'blockquote'){
+    const inner = inlineMd(el);
+    return inner.split('\n').map(l => '> ' + l).join('\n');
+  }
+
+  // Code block
+  if(tag === 'pre'){
+    const code = el.querySelector('code');
+    return '```\n' + (code ? code.textContent : text) + '\n```';
+  }
+
+  // Highlight box — distinguish variants
+  if(el.classList && el.classList.contains('highlight-box')){
+    let prefix = '> 💡 ';
+    if(el.classList.contains('warn')) prefix = '> ⚠️ ';
+    if(el.classList.contains('success')) prefix = '> ✅ ';
+    if(el.classList.contains('info')) prefix = '> ℹ️ ';
+    return prefix + text;
+  }
+
+  // Table (direct <table> or wrapped in div)
+  const tbl = tag === 'table' ? el : el.querySelector('table');
+  if(tbl) return tableToMd(tbl);
+
+  // Tag group / footer
+  if(el.classList && el.classList.contains('footer-tags')){
+    return Array.from(el.querySelectorAll('span'))
+      .map(s => '`' + s.textContent.trim() + '`')
+      .join(' ');
+  }
+
+  // Default: inline
+  return inlineMd(el);
+}
+
+function inlineMd(el){
+  let html = el.innerHTML;
+  // Convert <a> to [text](url)
+  html = html.replace(/<a\s[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+  // Convert <strong> to **
+  html = html.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
+  // Convert <em>/<i> to *
+  html = html.replace(/<(em|i)>(.*?)<\/(em|i)>/gi, '*$2*');
+  // Convert <code> to `
+  html = html.replace(/<code>(.*?)<\/code>/gi, '`$1`');
+  // Remove <span> (keep content)
+  html = html.replace(/<\/?span[^>]*>/gi, '');
+  // Convert <br> to newline
+  html = html.replace(/<br\s*\/?>/gi, '\n');
+  // Strip remaining HTML tags
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent.trim();
+}
+
+function tableToMd(table){
+  const rows = table.querySelectorAll('tr');
+  if(!rows.length) return '';
+  let md = '';
+  // Header
+  const headers = rows[0].querySelectorAll('th,td');
+  md += '| ' + Array.from(headers).map(h => h.textContent.trim()).join(' | ') + ' |\n';
+  md += '| ' + Array.from(headers).map(() => '---').join(' | ') + ' |\n';
+  // Body
+  for(let i = 1; i < rows.length; i++){
+    const cells = rows[i].querySelectorAll('td');
+    md += '| ' + Array.from(cells).map(c => c.textContent.trim()).join(' | ') + ' |\n';
+  }
+  return md;
+}
+
+// ===== My Note (persisted to localStorage) =====
+const MN_KEY='ai_note_mynote_' + encodeURIComponent('RAG 从 Demo 到生产：四大关键环节完整拆解');
+
+function loadMyNote(){
+  const editor=document.getElementById('mynoteEditor');
+  try{
+    const saved=localStorage.getItem(MN_KEY);
+    if(saved) editor.innerHTML=saved;
+  }catch(e){}
+  // Auto-save on input
+  editor._saveTimer=null;
+  editor.oninput=function(){
+    clearTimeout(this._saveTimer);
+    this._saveTimer=setTimeout(()=>{
+      try{localStorage.setItem(MN_KEY,this.innerHTML)}catch(e){}
+    },300);
+  };
+}
+</script>
+
+</body>
+</html>
