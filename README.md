@@ -1,6 +1,6 @@
 # AI Note 2.0 — 双页签图文笔记生成器
 
-AI 笔记生成技能（CodeBuddy/Claude/Trae 通用），支持对任何内容生成精美双页签 HTML 笔记。
+AI 笔记生成技能（CodeBuddy/Claude/Trae 通用），支持对网页文章和文字内容生成精美双页签 HTML 笔记。
 
 ## 功能
 
