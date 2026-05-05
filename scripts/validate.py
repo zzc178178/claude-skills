@@ -18,23 +18,37 @@ REQUIRED_CSS_CLASSES = {
     'tree-wrap':         'CSS Tree',
     'node-root':         'CSS Tree 根节点',
     'node-label':        'CSS Tree 节点标签',
+    'node-leaf':         'CSS Tree 叶节点',
+    'tree-tag':          'CSS Tree 标签',
     'diagram-grid-3':    '三列网格卡片',
-    'grid-card':         '三列网格卡片项',
-    'grid-card-icon':    '带图标三列卡片',
+    'diagram-grid-4':    '四列网格卡片',
+    'diagram-grid-auto': '自适应网格卡片',
+    'grid-card':         '网格卡片项',
+    'grid-card-icon':    '带图标卡片',
     'grid-card-label':   '卡片标签',
     'grid-card-title':   '卡片标题',
     'grid-card-emoji':   '卡片 emoji',
+    'grid-card-sub':     '卡片副标题',
+    'grid-card-desc':    '卡片描述',
     'step-list':         '纵向步骤卡片',
     'step-item':         '步骤项',
     'step-circle':       '步骤序号圆形',
+    'step-content':      '步骤内容',
+    'step-title':        '步骤标题',
+    'step-desc':         '步骤描述',
+    'step-tag':          '步骤标签',
     'tag-grid-2':        '两列标签卡片',
     'tag-card':          '标签卡片项',
+    'tag-card-title':    '标签卡片标题',
+    'tag-group':         '标签组',
     'tag-pill':          '标签胶囊',
     'effect-bar':        '效果条',
     'info-bar':          '信息条',
     'highlight-box':     '高亮框',
     'css-flow':          'CSS Flow Nodes',
+    'css-flow-row':      'CSS Flow 行',
     'css-node':          'CSS Flow 节点',
+    'css-arrow':         'CSS Flow 箭头',
     'diagram-section':   '图解模块容器',
     'diagram-desc':      '图解说明文字',
 }
@@ -46,6 +60,7 @@ MERMAID_FORBIDDEN_CHARS = {
     '≠': '改用 !=',
     '≈': '改用 ~=',
     '∈': '改用 in',
+    '_': '变量名避免下划线（如 running=True 而非 running_True）',
 }
 
 PLACEHOLDER_PATTERN = re.compile(r'<!--\s*(NOTE_TITLE|NOTE_SUBTITLE|NOTE_TAG|NOTE_SOURCE|TEXT_CONTENT|DIAGRAM_CONTENT)\s*-->')
@@ -80,7 +95,8 @@ def extract_css_classes(css_text):
 
 def extract_html_classes(html_text):
     classes = set()
-    for m in re.finditer(r'class="([^"]+)"', html_text):
+    # 匹配双引号 class="xxx" 和单引号 class='xxx'
+    for m in re.finditer(r'''class=["']([^"']+)["']''', html_text):
         for cls in m.group(1).split():
             classes.add(cls)
     return classes

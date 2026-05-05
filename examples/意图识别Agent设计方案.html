@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><!-- NOTE_TITLE --> - AI 笔记</title>
+<title>CHATBI 意图识别 Agent 设计方案 - AI 笔记</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
 /* ===== Reset & Base ===== */
@@ -450,40 +450,12 @@ tr:hover td { background: #f8f9fb; }
   margin-left: 4px;
   font-weight: 600;
 }
-.node-leaf {
-  background: #f0fff4;
-  color: #276749;
-  padding: 2px 12px;
-  border-radius: 6px;
-  display: inline-block;
-  font-weight: 500;
-  font-size: 0.88rem;
-}
-.node-leaf .tree-tag {
-  font-size: 0.75rem;
-  padding: 1px 8px;
-  border-radius: 4px;
-  margin-left: 4px;
-  font-weight: 600;
-}
 
-/* ===== 模式②③④：多列网格卡片 ===== */
+/* ===== 模式②③：三列网格卡片 ===== */
 .diagram-grid-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
-  margin-top: 8px;
-}
-.diagram-grid-4 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 10px;
-  margin-top: 8px;
-}
-.diagram-grid-auto {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
   margin-top: 8px;
 }
 .grid-card {
@@ -735,17 +707,6 @@ tr:hover td { background: #f8f9fb; }
   .diagram-grid-3 .grid-card-title { font-size: 0.85rem; }
   .diagram-grid-3 .grid-card-sub { font-size: 0.72rem; }
   .diagram-grid-3 .grid-card-desc { font-size: 0.75rem; }
-  .diagram-grid-4 { gap: 5px; }
-  .diagram-grid-4 .grid-card { padding: 8px; }
-  .diagram-grid-4 .grid-card-emoji { font-size: 1.1rem; }
-  .diagram-grid-4 .grid-card-title { font-size: 0.8rem; }
-  .diagram-grid-4 .grid-card-sub { font-size: 0.7rem; }
-  .diagram-grid-4 .grid-card-desc { font-size: 0.7rem; }
-  .diagram-grid-auto { gap: 5px; }
-  .diagram-grid-auto .grid-card { padding: 8px; }
-  .diagram-grid-auto .grid-card-emoji { font-size: 1.1rem; }
-  .diagram-grid-auto .grid-card-title { font-size: 0.8rem; }
-  .diagram-grid-auto .grid-card-desc { font-size: 0.7rem; }
   .tag-grid-2 { gap: 6px; }
   /* Mermaid diagrams scroll horizontally if too wide */
   .diagram-section .mermaid { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -771,10 +732,10 @@ tr:hover td { background: #f8f9fb; }
 
   <!-- ===== Header ===== -->
   <div class="note-header">
-    <div class="note-tag"><!-- NOTE_TAG --></div>
-    <h1><!-- NOTE_TITLE --></h1>
-    <div class="subtitle"><!-- NOTE_SUBTITLE --></div>
-    <!-- NOTE_SOURCE -->
+    <div class="note-tag">AI Agent</div>
+    <h1>CHATBI 意图识别 Agent 设计方案</h1>
+    <div class="subtitle">从自然语言到数据查询的意图理解引擎</div>
+    <div class='note-source'><span class='source-label'>原文来源</span><a class='source-link' href='https://mp.weixin.qq.com/s/CPW23oEzaFQclaEDP-vMfg' target='_blank'>data之道 · 公众号</a></div>
   </div>
 
   <!-- ===== Fixed Tab Navigation ===== -->
@@ -797,14 +758,14 @@ tr:hover td { background: #f8f9fb; }
   <div class="tab-content text-tab active" id="tab-text" role="tabpanel">
     <div class="card">
       <div class="text-content">
-        <!-- TEXT_CONTENT -->
+        <h2>为什么需要意图识别</h2><p>在 CHATBI（智能数据问答）系统中，用户以自然语言输入，AI 需要准确理解用户的真实目的，将输入映射到预定义的意图类别，避免流程跑偏。</p><p>意图识别相当于系统的「前台接待」——它决定了用户的问题该走哪条路、由哪个 Agent 处理，是整个问答链路的第一步也是最关键的一步。</p><h2>6 种意图分类</h2><table><thead><tr><th>意图</th><th>说明</th><th>示例</th></tr></thead><tbody><tr><td><span class='tag-pill tag-blue'>QUERY</span></td><td>查询类</td><td>上个月的营收是多少？</td></tr><tr><td><span class='tag-pill tag-green'>HI</span></td><td>寒暄类</td><td>你好、早上好</td></tr><tr><td><span class='tag-pill tag-purple'>SUMMARY</span></td><td>总结类</td><td>帮我总结一下前面的分析</td></tr><tr><td><span class='tag-pill tag-orange'>UNRELATED</span></td><td>无关类</td><td>今天天气怎么样？</td></tr><tr><td><span class='tag-pill'>FILE</span></td><td>文件类</td><td>上传新的销售数据</td></tr><tr><td><span class='tag-pill'>ASK</span></td><td>反问类</td><td>你说的哪个部门？</td></tr></tbody></table><p>前两列（QUERY、HI）占真实场景的 80% 以上，是必须优先覆盖的高频意图；后四列则决定了系统的边界感知能力。</p><h2>核心概念：槽位（Slot）</h2><p>槽位是意图的「参数」，用于从用户输入中提取具体信息。例如：</p><blockquote>查询「上个月北区的销售额」→ 意图 QUERY，槽位 {时间=上个月, 区域=北区, 指标=销售额}</blockquote><p>槽位设计得好不好，直接决定了一次交互能不能完成「追问—补全—执行」的闭环。</p><h3>槽位类型</h3><ul><li><strong>必填槽位</strong>：缺失时必须追问，否则无法执行；追问策略要自然，避免生硬。</li><li><strong>可选槽位</strong>：有则提取，无则忽略；适合「时间范围」「排序方式」等非核心参数。</li><li><strong>枚举槽位</strong>：预定义值列表，如「指标={销售额, 利润, 订单量}」，可做候选项推荐。</li><li><strong>时间槽位</strong>：自然语言时间解析，如「上个月」「Q3」「最近七天」，需要时间解析模型支持。</li><li><strong>实体槽位</strong>：业务实体名称匹配，如部门名、产品线名，需要知识库或同义词表辅助。</li></ul><h2>大模型意图识别流程</h2><div class='highlight-box highlight-blue'><strong>执行链路：</strong><br>用户输入 → LLM 意图匹配 + 槽位提取 → 槽位齐全则执行，缺失则追问 → 返回结构化结果</div><p>LLM 充当「语义理解引擎」，一次性输出意图和槽位，替代传统的多轮规则匹配，优势在于能处理模糊表达和长句。</p><h2>Prompt 设计要点</h2><ul><li><strong>明确角色和目标</strong>：让模型扮演「CHATBI 意图识别专家」，限定它的职责范围。</li><li><strong>输出格式严格限定 JSON</strong>：防止模型自由发挥，确保下游解析稳定。</li><li><strong>提供意图列表 + 槽位定义 + 示例</strong>：few-shot 示例能显著提升复杂意图的区分准确率。</li><li><strong>含历史对话上下文</strong>：当前轮对话前加 1-2 轮历史，帮助模型理解指代（如「它」「上个季度」）。</li><li><strong>槽位值缺失时置空，必要时提问</strong>：区分「可以不填」和「必须补全」，后者触发追问话术。</li></ul><h2>优化方案：向量检索预筛选</h2><p>当意图数量较多时，先将意图向量化存入向量库，每次先检索最相关的 Top-K 意图再传给 LLM，避免 Prompt 膨胀，提升准确率和响应速度。</p><p>这个方案尤其适合意图超过 20 种的系统，可将意图匹配准确率从 ~75% 提升至 ~90%，同时降低 LLM 调用 token 消耗。</p><div class='footer-tags'><span class='tag-pill tag-blue'>CHATBI</span><span class='tag-pill tag-blue'>意图识别</span><span class='tag-pill tag-blue'>Agent设计</span><span class='tag-pill tag-blue'>槽位提取</span><span class='tag-pill tag-blue'>Prompt工程</span></div>
       </div>
     </div>
   </div>
 
   <!-- ===== Diagram Tab ===== -->
   <div class="tab-content diagram-tab" id="tab-diagram" role="tabpanel">
-    <!-- DIAGRAM_CONTENT -->
+    <div class='diagram-section'><h3>🎯 意图识别整体架构</h3><div class='diagram-desc'>从用户输入到业务执行的完整链路</div><div class='css-flow'><div class='css-flow-row'><span class='css-node blue'>用户输入</span><span class='css-arrow'>→</span><span class='css-node blue'>LLM意图匹配</span><span class='css-arrow'>→</span><span class='css-node blue'>槽位提取</span></div></div></div><div class='diagram-section'><h3>📋 6 种意图分类</h3><div class='diagram-desc'>覆盖 CHATBI 交互场景</div><div class='tag-grid-2'><div class='tag-card'><div class='tag-card-title'>🔍 数据查询</div><div class='tag-group'><span class='tag-pill tag-blue'>QUERY 查询类</span><span class='tag-pill tag-blue'>SUMMARY 总结类</span></div></div><div class='tag-card'><div class='tag-card-title'>💬 交互管理</div><div class='tag-group'><span class='tag-pill tag-green'>HI 寒暄类</span><span class='tag-pill tag-green'>ASK 反问类</span></div></div><div class='tag-card'><div class='tag-card-title'>📁 数据操作</div><div class='tag-group'><span class='tag-pill tag-orange'>FILE 文件类</span></div></div><div class='tag-card'><div class='tag-card-title'>🚫 边界处理</div><div class='tag-group'><span class='tag-pill tag-orange'>UNRELATED 无关类</span></div></div></div></div><div class='diagram-section'><h3>🔧 意图识别决策流</h3><div class='diagram-desc'>槽位完整性决定执行路径</div><div class='step-list'><div class='step-item' style='background:#e8f0fe;'><div class='step-circle' style='background:#667eea;'>1</div><div class='step-content'><div class='step-title'>意图匹配 <span class='step-tag' style='color:#667eea;'>LLM</span></div><div class='step-desc'>用户输入 → LLM 判断所属意图分类</div></div></div><div class='step-item' style='background:#f0ebff;'><div class='step-circle' style='background:#7c3aed;'>2</div><div class='step-content'><div class='step-title'>槽位提取与校验 <span class='step-tag' style='color:#7c3aed;'>参数</span></div><div class='step-desc'>从输入中提取必填/可选槽位，检查完整性</div></div></div><div class='step-item' style='background:#fef4e8;'><div class='step-circle' style='background:#f59e0b;'>3</div><div class='step-content'><div class='step-title'>执行或追问 <span class='step-tag' style='color:#f59e0b;'>决策</span></div><div class='step-desc'>槽位齐全 → 执行查询；缺失 → 反问用户补充</div></div></div></div></div><div class='diagram-section'><h3>📐 优化方案</h3><div class='diagram-desc'>意图数量多时的性能优化</div><div class='css-flow'><div class='css-flow-row'><span class='css-node blue'>意图向量库</span><span class='css-arrow'>→</span><span class='css-node blue'>Top-K 检索</span><span class='css-arrow'>→</span><span class='css-node blue'>LLM 匹配</span></div></div></div>
   </div>
 
   <!-- ===== My Note Tab (blank, user fills in) ===== -->
@@ -1035,7 +996,7 @@ function tableToMd(table){
 }
 
 // ===== My Note (persisted to localStorage) =====
-const MN_KEY='ai_note_mynote_' + encodeURIComponent('<!-- NOTE_TITLE -->');
+const MN_KEY='ai_note_mynote_' + encodeURIComponent('CHATBI 意图识别 Agent 设计方案');
 
 function loadMyNote(){
   const editor=document.getElementById('mynoteEditor');
