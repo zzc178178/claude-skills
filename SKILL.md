@@ -82,7 +82,7 @@ cd <项目目录>
 python scripts/build.py "ai-note-output/xxx_content.json"
 ```
 
-- 读取 `ai-note2.0/assets/template.html` 作为模板
+- 读取 `ai-note-2.0/assets/template.html` 作为模板
 - 替换 `<!-- NOTE_TITLE -->`、`<!-- TEXT_CONTENT -->` 等 6 个占位符
 - 输出到 `ai-note-output/xxx.html`
 
