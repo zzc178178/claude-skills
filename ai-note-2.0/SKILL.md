@@ -53,15 +53,21 @@ description: 生成AI笔记（双页签图文笔记）。触发词：AI笔记、
 > 此规则适用于所有 HTML 属性：`class`、`style`、`onclick`、`id` 等，一律使用单引号。
 
 #### 来源（source）填充规则
-- 如果内容是**从 URL 获取的**，渲染为模板中的链接样式
-- 如果内容是**用户直接输入的（无 URL）**，则填入空字符串
-- 模板中 `.note-source` 的参考 HTML 结构：
 
-```html
-<div class="note-source">
-  <span class="source-label">原文来源</span>
-  <a class="source-link" href="https://..." target="_blank">公众号名称</a>
-</div>
+**填充方式（按优先级）：**
+1. **从原文内容提取** — 如果内容是从 URL 获取的，从页面中提取作者/公众号/站点名称作为链接文字（如微信公众号文章用页面显示的公众号名称，知乎用专栏名称）
+2. **写裸 URL 即可** — 无法确定名称时直接写 URL 字符串，build 脚本会自动抓取页面充实（公众号名称识别、站点名称映射、兜底域名显示等工作都在 build 层完成）
+3. **用户直接输入（无 URL）** — 填入空字符串
+
+```json
+// ✅ 推荐：只写 URL，build 自动充实
+"source": "https://mp.weixin.qq.com/s/..."
+
+// ✅ 或手动填写完整 HTML（覆盖自动识别结果）
+"source": "<div class='note-source'><span class='source-label'>原文来源</span><a class='source-link' href='...' target='_blank'>语兴</a></div>"
+
+// 无来源时
+"source": ""
 ```
 
 ### 4. 组装 + 校验

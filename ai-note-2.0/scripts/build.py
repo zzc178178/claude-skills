@@ -17,6 +17,9 @@ import sys
 import json
 import os
 import re
+import urllib.request
+import urllib.error
+import socket
 
 
 def find_template():
@@ -44,6 +47,49 @@ def find_template():
     sys.exit(1)
 
 
+def _fix_multiline_strings(raw):
+    """修复 JSON 字符串值中的真实换行符（逐字符扫描，100% 可靠）
+    JSON 标准不允许字符串内包含真实换行符，需要替换为 \\n 转义序列。
+    逐字符扫描，仅在字符串值内部将真实换行符替换为 \\n。
+    """
+    result = []
+    in_string = False        # 当前是否在 JSON 字符串值内
+    in_escape = False        # 当前是否在转义序列内（\\...）
+    quote_at = 0             # 上一个未闭合双引号的位置（用于跳过 key 的引号）
+
+    for i, ch in enumerate(raw):
+        if in_escape:
+            # 转义序列内的字符原样保留
+            result.append(ch)
+            in_escape = False
+            continue
+
+        if ch == '\\':
+            # 转义序列开始
+            result.append(ch)
+            in_escape = True
+            continue
+
+        if ch == '"':
+            if in_string:
+                # 结束当前字符串值
+                in_string = False
+            else:
+                # 开始新字符串值
+                in_string = True
+            result.append(ch)
+            continue
+
+        if in_string and ch == '\n':
+            # 字符串值内部的真实换行符 → 替换为 \\n
+            result.append('\\n')
+            continue
+
+        result.append(ch)
+
+    return ''.join(result)
+
+
 def read_json_safe(path):
     """读取 JSON，解析失败时尝试自动修复并给出精确诊断"""
     with open(path, 'r', encoding='utf-8') as f:
@@ -67,7 +113,26 @@ def read_json_safe(path):
         marker = ' >>>' if i == line_no - 1 else '    '
         print(f"  {marker} {i+1}: {lines[i][:120]}")
 
-    # 3. 自动修复：将 HTML 属性中的双引号替换为单引号
+    # 3. 自动修复：合并多行字符串值（JSON 标准不允许字符串内包含真实换行符）
+    if 'control character' in _exc.msg:
+        print(f"[FIX] 检测到多行字符串（字符串值内含真实换行符），尝试合并...")
+        try:
+            fixed = _fix_multiline_strings(raw)
+            raw = fixed
+            # 用修复后的内容重试解析
+            data = json.loads(raw)
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            print(f"[FIX] 多行字符串合并成功，已更新 JSON 文件")
+            return data
+        except json.JSONDecodeError as e3:
+            print(f"  [WARN] 多行合并后仍解析失败: {e3.msg}，继续后续修复...")
+            # Fall through to step 4 with original raw
+            lines = raw.split('\n')
+    else:
+        fixed = raw
+
+    # 4. 自动修复：将 HTML 属性中的双引号替换为单引号
     print(f"[FIX] 尝试自动修复：将 HTML 属性双引号 → 单引号...")
     # Pattern: inside HTML tags, replace attribute double quotes with single quotes
     # Match: <tag attr="value"> → <tag attr='value'>
@@ -100,6 +165,103 @@ def read_json_safe(path):
         sys.exit(1)
 
 
+SITE_DISPLAY = {
+    'mp.weixin.qq.com': '微信公众号',
+    'weixin.qq.com':    '微信公众号',
+    'zhuanlan.zhihu.com': '知乎专栏',
+    'zhihu.com':        '知乎',
+    'juejin.cn':        '掘金',
+    'oschina.net':      '开源中国',
+    'csdn.net':         'CSDN',
+    '36kr.com':         '36氪',
+    'huxiu.com':        '虎嗅',
+    'sspai.com':        '少数派',
+    'infoq.cn':         'InfoQ',
+    'geekbang.org':     '极客邦',
+}
+
+def _site_name(url):
+    """从 URL 提取可读的站点名称"""
+    for domain, name in SITE_DISPLAY.items():
+        if domain in url:
+            return name
+    m = re.search(r'https?://([^/]+)', url)
+    if m:
+        return m.group(1).replace('www.', '')
+    return '原文链接'
+
+
+def _fetch_author_wechat(url, timeout=5):
+    """尝试从微信公众号文章页提取公众号名称
+    返回公众号名称，失败返回 None。
+    """
+    req = urllib.request.Request(
+        url,
+        headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                          '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            html = resp.read().decode('utf-8', errors='replace')
+    except Exception:
+        return None
+
+    # WeChat 公众号名称的几种可能位置
+    patterns = [
+        r'var\s+nickname\s*=\s*"([^"]+)"',           # 内联 JS 变量
+        r'var\s+appmsg_ext\s*=\s*\{[^}]*?"author_name"\s*:\s*"([^"]+)"',  # appmsg_ext
+        r'weui_media_extra_info[^>]*>([^<]+)',         # 页面底部公众号名片
+        r'class="profile_nickname">([^<]+)',             # 新版公众号名
+        r'property="og:article:author"[^>]*content="([^"]+)"',  # og meta
+        r'class="rich_media_meta_nickname"[^>]*>([^<]+)',      # 文章头部公众号名
+    ]
+    for pat in patterns:
+        m = re.search(pat, html)
+        if m:
+            name = m.group(1).strip()
+            if name and len(name) < 50:
+                return name
+    return None
+
+
+def _wrap_source_url(url):
+    """将裸 URL 包装为 note-source 格式，尝试抓取公众号名称充实链接文字"""
+    site = None
+    if 'mp.weixin.qq.com' in url:
+        print(f"  [INFO] 尝试抓取公众号名称...")
+        site = _fetch_author_wechat(url)
+        if site:
+            print(f"  [INFO] 识别到公众号: {site}")
+        else:
+            print(f"  [INFO] 未识别到公众号名，使用默认名称")
+
+    name = site or _site_name(url)
+    return (
+        f"<div class='note-source'>"
+        f"<span class='source-label'>原文来源</span>"
+        f"<a class='source-link' href='{url}' target='_blank'>{name}</a>"
+        f"</div>"
+    )
+
+
+def enrich_source(source):
+    """验充实化 source 字段：裸 URL → 完整 HTML 格式"""
+    if not source:
+        return source
+    # 已经是完整格式
+    if 'note-source' in source and 'source-link' in source:
+        return source
+    # 裸 URL
+    if source.startswith('http://') or source.startswith('https://'):
+        print(f"  [FIX] source 为裸 URL，自动充实...")
+        return _wrap_source_url(source)
+    # 其他形式，直接包装
+    print(f"  [WARN] source 格式不符合要求，自动包装")
+    return _wrap_source_url(source)
+
+
 def build(json_path):
     template_path = find_template()
 
@@ -116,6 +278,9 @@ def build(json_path):
             data[key] = ''
             print(f"  [WARN] 字段 '{key}' 为 null，已转为空字符串")
 
+    # 验证 source 字段；裸 URL 会自动充实为完整 HTML 格式
+    data['source'] = enrich_source(data.get('source', ''))
+
     # 验证必要字段
     required = ['title', 'tag', 'subtitle', 'source', 'text_content', 'diagram_content']
     for key in required:
@@ -125,10 +290,8 @@ def build(json_path):
     # 校验 source 格式（允许空字符串，仅非空时校验）
     source = data['source']
     if source and ('note-source' not in source or 'source-link' not in source):
-        raise ValueError(
-            f"[FAIL] source 字段格式错误，缺少 note-source 包装结构\n"
-            f"正确格式: <div class='note-source'><span class='source-label'>原文来源</span><a class='source-link' href='...' target='_blank'>名称</a></div>"
-        )
+        print(f"  [WARN] source 字段缺少标准 HTML 包装，尝试自动包装...")
+        data['source'] = _wrap_source_url(source)
 
     # 替换占位符
     html = template
