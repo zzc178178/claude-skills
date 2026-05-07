@@ -27,6 +27,7 @@ AI 笔记生成 IDE 技能，支持对网页文章和文字内容生成精美双
 - [⚙️ RAG 从 Demo 到生产](https://zzc178178.github.io/claude-skills/examples/RAG%E4%BB%8EDemo%E5%88%B0%E7%94%9F%E4%BA%A7.html)
 - [📊 数据治理 Agent](https://zzc178178.github.io/claude-skills/examples/%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86Agent.html)
 - [🎯 意图识别 Agent 设计方案](https://zzc178178.github.io/claude-skills/examples/%E6%84%8F%E5%9B%BE%E8%AF%86%E5%88%ABAgent%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.html)
+- [🔄 AI时代下数据开发工作方式转变](https://zzc178178.github.io/claude-skills/examples/AI%E6%97%B6%E4%BB%A3%E4%B8%8B%E6%95%B0%E6%8D%AE%E5%BC%80%E5%8F%91%E5%B7%A5%E4%BD%9C%E6%96%B9%E5%BC%8F%E8%BD%AC%E5%8F%98.html)
 
 ## 配套阅读器
 
