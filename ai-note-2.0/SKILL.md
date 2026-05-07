@@ -80,7 +80,7 @@ python scripts/build.py "~/ai-note-output/_content/xxx_content.json"
 python scripts/build.py "~/ai-note-output/_content/"
 ```
 
-- 脚本自动读取内置模板（`skills/ai-note-2.0/assets/template.html`）
+- 脚本自动读取内置模板（`skills/ai-note-2.0/ai-note-2.0/assets/template.html`）
 - 替换 `<!-- NOTE_TITLE -->`、`<!-- TEXT_CONTENT -->` 等 6 个占位符
 - 输出到 `~/ai-note-output/xxx.html`（JSON 在 `_content/` 子目录中时，HTML 输出到父目录）
 

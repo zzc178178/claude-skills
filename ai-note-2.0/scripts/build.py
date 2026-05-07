@@ -27,13 +27,13 @@ def find_template():
     # 1. skill 目录（开发环境）
     skill_path = os.path.join(
         os.path.expanduser('~'),
-        '.claude', 'skills', 'ai-note-2.0', 'assets', 'template.html'
+        '.claude', 'skills', 'ai-note-2.0', 'ai-note-2.0', 'assets', 'template.html'
     )
     if os.path.exists(skill_path):
         return skill_path
 
-    # 2. 项目 scripts 同级
-    local_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'template.html')
+    # 2. 项目 scripts 同级的 assets 目录
+    local_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'template.html')
     if os.path.exists(local_path):
         return os.path.abspath(local_path)
 
