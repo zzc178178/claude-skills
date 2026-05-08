@@ -21,13 +21,19 @@ import urllib.request
 import urllib.error
 import socket
 
+# Fix Windows console encoding for emoji/unicode output
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 
 def find_template():
     """查找模板文件"""
     # 1. skill 目录（开发环境）
     skill_path = os.path.join(
         os.path.expanduser('~'),
-        '.claude', 'skills', 'ai-note-2.0', 'ai-note-2.0', 'assets', 'template.html'
+        '.claude', 'skills', 'ai-note-2.0', 'assets', 'template.html'
     )
     if os.path.exists(skill_path):
         return skill_path
