@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAG 从 Demo 到生产：四大关键环节完整拆解 - AI 笔记</title>
+<title>RAG从Demo到生产 - AI 笔记</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
 /* ===== Reset & Base ===== */
@@ -36,6 +36,11 @@ body {
   padding: 0 16px 12px;
   background: linear-gradient(to top, #f0f2f5 70%, transparent);
   pointer-events: none;
+  transform: translateY(0);
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.tab-bar-fixed.tab-hidden {
+  transform: translateY(100%);
 }
 .tab-bar-fixed .tab-nav {
   max-width: 860px;
@@ -159,20 +164,37 @@ body {
   position: relative;
   font-family: inherit;
 }
-.tab-copy-btn {
-  padding: 14px 18px;
+/* ===== FAB Copy Button ===== */
+.fab-copy {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  z-index: 101;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   border: none;
-  border-left: 1px solid #eef0f4;
-  background: transparent;
-  font-size: 0.8rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 1.3rem;
   cursor: pointer;
-  color: #8896ab;
-  font-family: inherit;
-  transition: all 0.3s;
-  white-space: nowrap;
-  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.tab-copy-btn:hover { color: #667eea; background: #f8f9fb; }
+.fab-copy:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(102,126,234,0.5);
+}
+.fab-copy:active {
+  transform: scale(0.95);
+}
+.fab-copy.success {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  box-shadow: 0 4px 16px rgba(52,211,153,0.4);
+}
 .tab-btn::after {
   content: '';
   position: absolute;
@@ -376,6 +398,12 @@ tr:hover td { background: #f8f9fb; }
 .diagram-section .mermaid svg {
   max-width: 100%;
 }
+.mermaid-save-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-top: 4px;
+}
 
 /* ===== CSS Tree (复用树形结构：选型/分类/层级) ===== */
 .tree-wrap {
@@ -450,12 +478,40 @@ tr:hover td { background: #f8f9fb; }
   margin-left: 4px;
   font-weight: 600;
 }
+.node-leaf {
+  background: #f0fff4;
+  color: #276749;
+  padding: 2px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  font-weight: 500;
+  font-size: 0.88rem;
+}
+.node-leaf .tree-tag {
+  font-size: 0.75rem;
+  padding: 1px 8px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 600;
+}
 
-/* ===== 模式②③：三列网格卡片 ===== */
+/* ===== 模式②③④：多列网格卡片 ===== */
 .diagram-grid-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
+  margin-top: 8px;
+}
+.diagram-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.diagram-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
   margin-top: 8px;
 }
 .grid-card {
@@ -700,6 +756,40 @@ tr:hover td { background: #f8f9fb; }
   .tab-btn { font-size: 0.85rem; padding: 12px 10px; }
   .css-node { font-size: 0.75rem; padding: 6px 12px; white-space: normal; }
   .diagram-section { padding: 18px 16px; }
+  /* Grid layouts keep columns but shrink */
+  .diagram-grid-3 { gap: 6px; }
+  .diagram-grid-3 .grid-card { padding: 10px; }
+  .diagram-grid-3 .grid-card-emoji { font-size: 1.3rem; }
+  .diagram-grid-3 .grid-card-title { font-size: 0.85rem; }
+  .diagram-grid-3 .grid-card-sub { font-size: 0.72rem; }
+  .diagram-grid-3 .grid-card-desc { font-size: 0.75rem; }
+  .diagram-grid-4 { gap: 5px; }
+  .diagram-grid-4 .grid-card { padding: 8px; }
+  .diagram-grid-4 .grid-card-emoji { font-size: 1.1rem; }
+  .diagram-grid-4 .grid-card-title { font-size: 0.8rem; }
+  .diagram-grid-4 .grid-card-sub { font-size: 0.7rem; }
+  .diagram-grid-4 .grid-card-desc { font-size: 0.7rem; }
+  .diagram-grid-auto { gap: 5px; }
+  .diagram-grid-auto .grid-card { padding: 8px; }
+  .diagram-grid-auto .grid-card-emoji { font-size: 1.1rem; }
+  .diagram-grid-auto .grid-card-title { font-size: 0.8rem; }
+  .diagram-grid-auto .grid-card-desc { font-size: 0.7rem; }
+  .tag-grid-2 { gap: 6px; }
+  /* Mermaid diagrams scroll horizontally if too wide */
+  .diagram-section .mermaid { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .diagram-section .mermaid svg { min-width: 320px; }
+  /* Step items stack vertically on very narrow screens */
+  .step-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+  /* Timeline tighter */
+  .timeline-item { gap: 10px; }
+  .timeline-marker { width: 30px; height: 30px; font-size: 0.7rem; }
+  /* CSS flow wraps nicely */
+  .css-flow-row { gap: 6px; }
+}
+@media (max-width: 380px) {
+  .tab-btn { font-size: 0.78rem; padding: 10px 6px; }
+  .tab-btn .icon { display: none; }
+  .fab-copy { width: 42px; height: 42px; right: 14px; bottom: 80px; font-size: 1.1rem; }
 }
 </style>
 </head>
@@ -709,13 +799,10 @@ tr:hover td { background: #f8f9fb; }
 
   <!-- ===== Header ===== -->
   <div class="note-header">
-    <div class="note-tag">RAG实战</div>
-    <h1>RAG 从 Demo 到生产：四大关键环节完整拆解</h1>
-    <div class="subtitle">鹅厂面试官追问：5000 份文档如何稳定答对？</div>
-    <div class="note-source">
-      <span class="source-label">原文来源</span>
-      <a class="source-link" href="https://mp.weixin.qq.com/s/YNcfSN0uv1c1LsLPzgB0jw" target="_blank">吴师兄学大模型 · 公众号</a>
-    </div>
+    <div class="note-tag">RAG · 检索增强生成</div>
+    <h1>RAG从Demo到生产</h1>
+    <div class="subtitle">鹅厂面试官视角：Demo跑通只是10%的工作</div>
+    <div class='note-source'><span class='source-label'>原文来源</span><a class='source-link' href='https://mp.weixin.qq.com/s/YNcfSN0uv1c1LsLPzgB0jw' target='_blank'>吴师兄</a></div>
   </div>
 
   <!-- ===== Fixed Tab Navigation ===== -->
@@ -730,294 +817,307 @@ tr:hover td { background: #f8f9fb; }
       <button class="tab-btn" data-tab="mynote" role="tab" aria-selected="false">
         <span class="icon">✏️</span>随手记
       </button>
-      <button class="tab-copy-btn" onclick="event.stopPropagation();copyAsMarkdown()" title="复制文字为 Markdown">📋</button>
     </div>
   </div>
+
+  <!-- ===== FAB Copy Button ===== -->
+  <button class="fab-copy" onclick="smartCopy()" title="复制当前内容">📋</button>
 
   <!-- ===== Text Tab ===== -->
   <div class="tab-content text-tab active" id="tab-text" role="tabpanel">
     <div class="card">
       <div class="text-content">
-        <h2>📌 核心观点</h2>
-        <p>RAG 最难的不是跑通 Demo——<strong>Demo 只完成了 10% 的工作</strong>。真正让 RAG 在 5000 份文档中稳定答对，需要经历数据准备、检索召回、Query 理解、生成控制四大环节的系统性优化。</p>
+        <h2>一、数据准备：知识库质量决定RAG上限</h2>
 
-        <div class="highlight-box info">
-          <strong>核心矛盾</strong>：Demo 阶段用几份文档跑通 pipeline 很容易，但扩展到生产环境后，chunk 碎片化、检索噪音、意图误解、LLM 幻觉等问题逐一暴露。
-        </div>
+<h3>1. 切块不是技术问题，是理解问题</h3>
 
-        <h2>📦 数据准备：知识库质量决定 RAG 上限</h2>
-        <h3>常见错误</h3>
-        <p>直接按固定字数切分 chunk（如 512 tokens），导致<strong>语义被切断</strong>，一个完整段落可能被拆到两个 chunk 中，检索结果碎片化。</p>
+<p>5000份PDF文档（产品说明书、理赔条款、培训资料、历史案例），第一版用PyPDF提取+500字一刀切，结果用户问「重疾险的等待期是多久」，top-3 chunk全是语义碎片——三段都提到「等待期」但无一能完整作答。</p>
 
-        <h3>优化方案</h3>
-        <ul>
-          <li><strong>结构化切分</strong>：按文档逻辑结构（标题、段落、表格、列表）而非固定字节切分</li>
-          <li><strong>上下文路径</strong>：每个 chunk 补充层级信息，如 <code>产品名 &gt; 章节 &gt; 条款</code></li>
-          <li><strong>动态窗口</strong>：检索时返回命中 chunk 前后各一个 chunk，补充上下文</li>
-        </ul>
+<div class='highlight-box blue'>核心问题：按字数机械切块会把完整语义切碎，向量检索命中了关键词但信息残缺。</div>
 
-        <div class="highlight-box success">
-          <strong>效果</strong>：召回准确率从 0.62 提升至 0.84
-        </div>
+<h3>2. 三招修复切块策略</h3>
 
-        <h2>🔍 检索召回：不是找最相似的，是找最有用的</h2>
-        <h3>挑战</h3>
-        <p>Embedding 模型选择、召回阈值设定、纯语义检索的关键词精确匹配缺陷。</p>
+<ul>
+<li><strong>结构化解析</strong>——识别标题、段落、表格、列表。标题+下属内容作为一个chunk，表格单独成chunk，语义独立的列表项也单独成chunk。</li>
+<li><strong>加上下文路径</strong>——每个chunk开头补充层级路径，如<code>产品名称：XX重疾险 &gt; 第三章保险责任 &gt; 3.2等待期规定</code>。即使chunk只有一句话，LLM也能知道它在讲什么。</li>
+<li><strong>动态窗口</strong>——检索时不只返回命中chunk，还返回前后各一个chunk，补全被切断的语义。</li>
+</ul>
 
-        <h3>解决方案</h3>
-        <ul>
-          <li>中文场景使用 <strong>BGE-large-zh</strong> 替代 OpenAI 的 text-embedding-ada-002，语义理解更准确</li>
-          <li>通过测试选定最佳召回阈值 <strong>0.72</strong>，兼顾召回率与精度</li>
-          <li>采用 <strong>向量检索 + BM25 混合检索</strong>，再用 <strong>Reranker 模型</strong> 重新排序</li>
-        </ul>
+<div class='highlight-box green'>召回准确率从 <strong>0.62 → 0.84</strong></div>
 
-        <div class="highlight-box success">
-          <strong>效果</strong>：召回准确率从 0.84 提升至 0.91
-        </div>
+<h2>二、检索召回：找最有用的，不是最相似的</h2>
 
-        <h2>🧠 Query 理解：用户问的，不一定是系统该搜的</h2>
-        <h3>问题</h3>
-        <p>用户问题类型多样（事实查询、计算求解、NL2SQL、闲聊等），统一丢进向量检索会导致<strong>答非所问</strong>。</p>
+<h3>1. Embedding模型选型</h3>
 
-        <h3>三级意图识别路由</h3>
-        <ul>
-          <li><strong>规则匹配</strong>：关键词/正则匹配，覆盖大部分常见问题，<span class="tag-green">零延迟</span></li>
-          <li><strong>BERT 分类器</strong>：模型分类，毫秒级响应，<span class="tag-purple">高准确率</span></li>
-          <li><strong>LLM 兜底</strong>：处理疑难 case，<span class="tag-orange">最强理解</span>但成本高</li>
-        </ul>
+<p>OpenAI text-embedding-ada-002对中文保险条款检索效果差——问「意外伤害包括哪些情况」，召回的是「意外医疗」「意外身故」等相关但不直接的内容。换 <span class='tag-pill tag-blue'>BGE-large-zh</span>（智源开源中文模型）后，中文语义理解更细腻，召回精度大幅提升。</p>
 
-        <p>根据意图路由到不同模块：<span class="tag-blue">知识问答→混合检索</span> <span class="tag-green">计算→计算模块</span> <span class="tag-purple">数据查询→NL2SQL</span> <span class="tag-orange">闲聊→通用对话</span></p>
+<h3>2. 召回阈值：一个参数决定生死</h3>
 
-        <h3>高级技巧</h3>
-        <p><strong>多索引路由</strong>：按主题分区索引，检索时只搜索相关分区，提高精度并降低延迟。</p>
+<table>
+<tr><th>阈值</th><th>召回率</th><th>说明</th></tr>
+<tr><td>0.65</td><td>0.89</td><td>top-5里有2个噪音</td></tr>
+<tr><td><strong>0.72</strong></td><td><strong>0.84</strong></td><td>top-5基本都有用</td></tr>
+<tr><td>0.78</td><td>0.71</td><td>开始漏掉边缘case</td></tr>
+</table>
 
-        <h2>✍️ 生成阶段：RAG 不是简单的"检索+生成"</h2>
-        <h3>常见问题</h3>
-        <p>LLM 自由发挥、模棱两可、答非所问。</p>
+<div class='highlight-box orange'>选0.72——宁可少召回，也不要让LLM被噪音带偏。精度优先。</div>
 
-        <h3>优化方案</h3>
-        <ul>
-          <li><strong>强约束 Prompt</strong>：要求严格基于检索文档回答，禁止模糊表达，要求注明来源</li>
-          <li><strong>置信度评估</strong>：LLM 输出时附带 1-5 分置信度分数，低于 3 分自动触发二次检索或扩大检索范围</li>
-        </ul>
+<h3>3. 混合检索：向量+关键词缺一不可</h3>
 
-        <div class="highlight-box success">
-          <strong>效果</strong>：答非所问投诉率从 18% 降到 7%
-        </div>
+<p>纯向量检索的致命缺陷：只看语义相似度，不看关键词匹配。用户问「保单号A12345的理赔进度」，embedding会把ID编码得很模糊，召回一堆通用文档却找不到具体保单。</p>
 
-        <h2>🔧 系统性工程协同</h2>
-        <p>RAG 是端到端系统工程，每一细节都需要测试与调优：</p>
-        <ul>
-          <li><strong>文档增量更新</strong>：知识库变更时的同步机制</li>
-          <li><strong>检索性能</strong>：Milvus 分区索引，只检索相关分区</li>
-          <li><strong>响应速度</strong>：高频 query 缓存、流式输出</li>
-          <li><strong>监控指标</strong>：召回准确率、投诉率、响应延迟持续跟踪</li>
-        </ul>
+<p>最终方案：向量检索 <span class='tag-pill tag-blue'>+</span> BM25关键词检索 → 合并去重 → Reranker重排。</p>
 
-        <h2>💡 面试回答框架</h2>
-        <p>面试中聊 RAG 难点，建议按四个层次组织：</p>
-        <ol>
-          <li><strong>系统性思维</strong> → RAG 是端到端工程，不止是"检索+生成"</li>
-          <li><strong>具体坑点</strong> → chunk 碎片化、检索噪音、意图误解、LLM 幻觉</li>
-          <li><strong>量化指标</strong> → 召回率 0.62→0.84→0.91，投诉率 18%→7%</li>
-          <li><strong>工程能力</strong> → 增量更新、分区索引、缓存、监控</li>
-        </ol>
+<div class='highlight-box green'>召回准确率从 <strong>0.84 → 0.91</strong></div>
 
-        <div class="footer-tags">
-          <span class="tag-blue">RAG</span>
-          <span class="tag-green">生产部署</span>
-          <span class="tag-purple">检索增强生成</span>
-          <span class="tag-orange">Intent Routing</span>
-          <span class="tag-blue">置信度评估</span>
-          <span class="tag-green">Hybrid Search</span>
-        </div>
+<h2>三、Query理解：用户问的不一定是系统该搜的</h2>
+
+<h3>1. 四种意图类型</h3>
+
+<ul>
+<li><strong>事实查询</strong>——「重疾险保障范围？」→ 直接检索</li>
+<li><strong>计算问题</strong>——「投保50万免赔额5000能赔多少？」→ 路由到计算模块</li>
+<li><strong>数据库查询</strong>——「上个月理赔审批平均时长？」→ 走NL2SQL</li>
+<li><strong>带时间约束</strong>——「最新车险理赔流程？」→ 检索+时间过滤</li>
+</ul>
+
+<p>所有query一股脑丢进向量检索的后果：该算的不算，该过滤的不过滤。</p>
+
+<h3>2. 三级意图识别组合方案</h3>
+
+<ul>
+<li><strong>第一级：规则匹配</strong>——关键词能命中的直接走规则，<span class='tag-pill tag-green'>零延迟</span></li>
+<li><strong>第二级：BERT分类器</strong>——规则匹配不上的，几十毫秒解决</li>
+<li><strong>第三级：LLM兜底</strong>——softmax最高类别概率仅0.4时才调LLM</li>
+</ul>
+
+<p>路由逻辑：<span class='tag-pill tag-blue'>知识问答</span> → 混合检索 | <span class='tag-pill tag-purple'>计算求解</span> → 计算模块 | <span class='tag-pill tag-orange'>数据查询</span> → NL2SQL | <span class='tag-pill tag-green'>闲聊</span> → LLM通用对话</p>
+
+<p><strong>进阶策略</strong>：多索引路由——知识库按主题分索引（理赔制度/销售策略/产品信息），意图识别后选对应索引检索，既提精度又减计算量。</p>
+
+<h2>四、生成阶段：不是检索+生成的简单加法</h2>
+
+<h3>1. Prompt约束：让LLM闭嘴只说文档里有的</h3>
+
+<p>最初Prompt只是「根据以下文档回答问题」，LLM经常自己发挥——文档明明说等待期90天，它非要补充「建议咨询客服」。</p>
+
+<p>改为强约束Prompt的四条规则：</p>
+<ol>
+<li>只使用文档中的信息，不要添加额外推理</li>
+<li>文档中没有明确答案时回复「知识库中暂无相关信息」</li>
+<li>不要说「可能」「大概」「建议咨询」等模糊表达</li>
+<li>引用文档时注明来源（文档名称+章节）</li>
+</ol>
+
+<h3>2. 置信度评估：让LLM知道自己不知道</h3>
+
+<p>让LLM在答案末尾输出置信度分数（1-5分）。低于3分时自动触发二次检索——用改写后的query重新搜索，或降低召回阈值扩大范围。</p>
+
+<div class='highlight-box green'>「答非所问」投诉率从 <strong>18% → 7%</strong></div>
+
+<h2>五、系统协同：RAG最难的部分</h2>
+
+<p>每个模块各司其职不难，难的是让它们协同到最优——需要既懂算法又懂工程。</p>
+
+<ul>
+<li><strong>文档更新</strong>——知识库不是一次性导入。业务文档会更新，旧版本标记失效，新版本及时入库。方案：每天凌晨跑增量更新脚本，只对变化部分重新embedding。</li>
+<li><strong>向量检索性能</strong>——5000份还好，50万份呢？用Milvus分区索引，按业务线分分区，检索时只搜相关分区，速度提升3倍。</li>
+<li><strong>Prompt格式</strong>——5个chunk平铺会让LLM被前面内容带偏。做法：给每个chunk加序号和来源标签，让LLM知道这是5段独立信息而非连贯文章。</li>
+<li><strong>响应速度</strong>——两层优化：高频query做缓存（同问题直接返回）；流式输出（生成一句推一句）。</li>
+</ul>
+
+<h2>六、面试怎么聊RAG难点</h2>
+
+<ol>
+<li><strong>系统性思维</strong>——RAG不是单点算法，是端到端系统工程，环环相扣，任何一环瑕疵都导致答案质量下降。</li>
+<li><strong>具体的坑</strong>——切块策略、召回阈值调优、意图识别、Prompt约束，每个环节都有技术决策和权衡。</li>
+<li><strong>量化指标</strong>——不说「优化了检索」，说「召回准确率0.62→0.91」；不说「改进了Prompt」，说「投诉率18%→7%」。</li>
+<li><strong>工程能力</strong>——文档更新、性能优化、缓存策略、监控告警，这些工程细节才是面试官最想听的。</li>
+</ol>
+
+<div class='footer-tags'>
+  <span class='tag-pill tag-blue'>RAG</span>
+  <span class='tag-pill tag-purple'>混合检索</span>
+  <span class='tag-pill tag-green'>意图识别</span>
+  <span class='tag-pill tag-orange'>Prompt工程</span>
+</div>
       </div>
     </div>
   </div>
 
   <!-- ===== Diagram Tab ===== -->
   <div class="tab-content diagram-tab" id="tab-diagram" role="tabpanel">
-    <!-- Diagram 1: RAG 系统整体架构 -->
-    <div class="diagram-section">
-      <h3>🏗️ RAG 生产系统整体架构</h3>
-      <div class="diagram-desc">从用户 Query 到最终回答的完整链路，含反馈回路</div>
-      <div class="mermaid">
-flowchart TB
-    User[用户Query] --> QI[Query理解]
+    <div class='diagram-section'>
+  <h3>📦 数据准备：三招修复切块</h3>
+  <div class='diagram-desc'>5000份PDF从按字数切到按结构切，召回0.62→0.84</div>
+  <div class='diagram-grid-3'>
+    <div class='grid-card'>
+      <div class='grid-card-label'>📄 第1招</div>
+      <div class='grid-card-title'>结构化解析</div>
+      <div class='grid-card-desc'>标题+下属内容一个chunk<br/>表格单独成chunk<br/>语义独立列表项单独成chunk</div>
+    </div>
+    <div class='grid-card'>
+      <div class='grid-card-label'>🔗 第2招</div>
+      <div class='grid-card-title'>上下文路径</div>
+      <div class='grid-card-desc'>chunk开头补层级路径<br/>如：XX重疾险 &gt; 3.2等待期<br/>即使一句话LLM也知道上下文</div>
+    </div>
+    <div class='grid-card'>
+      <div class='grid-card-label'>📐 第3招</div>
+      <div class='grid-card-title'>动态窗口</div>
+      <div class='grid-card-desc'>检索时返回命中chunk<br/>+前后各一个chunk<br/>补全被切断的语义</div>
+    </div>
+  </div>
+  <div class='effect-bar'>📊 效果：召回准确率 0.62 → 0.84</div>
+</div>
 
-    QI --> Route{三级意图路由}
-    Route -->|知识问答| Search[混合检索]
-    Route -->|计算求解| Calc[计算模块]
-    Route -->|数据查询| SQL[NL2SQL]
-    Route -->|闲聊| Chat[通用对话]
+<div class='diagram-section'>
+  <h3>🎯 混合检索：三重保障</h3>
+  <div class='diagram-desc'>向量+BM25+Reranker，解决纯语义检索的ID/精确匹配盲区</div>
+  <div class='diagram-grid-3'>
+    <div class='grid-card grid-card-icon'>
+      <div class='grid-card-label'>语义匹配</div>
+      <div class='grid-card-emoji'>🧮</div>
+      <div class='grid-card-title'>向量检索</div>
+      <div class='grid-card-sub'>BGE-large-zh模型</div>
+      <div class='grid-card-desc'>语义相似度匹配<br/>阈值0.72精度优先</div>
+    </div>
+    <div class='grid-card grid-card-icon'>
+      <div class='grid-card-label'>精确匹配</div>
+      <div class='grid-card-emoji'>🔑</div>
+      <div class='grid-card-title'>BM25检索</div>
+      <div class='grid-card-sub'>关键词匹配</div>
+      <div class='grid-card-desc'>保单号/ID等精确查找<br/>向量模型无法覆盖的场景</div>
+    </div>
+    <div class='grid-card grid-card-icon'>
+      <div class='grid-card-label'>精排优化</div>
+      <div class='grid-card-emoji'>🏅</div>
+      <div class='grid-card-title'>Reranker重排</div>
+      <div class='grid-card-sub'>交叉编码器</div>
+      <div class='grid-card-desc'>两路结果合并去重<br/>重新打分取top-5</div>
+    </div>
+  </div>
+  <div class='info-bar'>
+    <span>召回阈值 0.72</span><span class='bar-sep'>|</span>
+    <span>语义模糊→向量</span><span class='bar-sep'>|</span>
+    <span>关键词精确→BM25</span>
+  </div>
+  <div class='effect-bar'>📊 效果：召回准确率 0.84 → 0.91</div>
+</div>
 
-    subgraph "检索层"
-        Search --> Vec[(向量检索<br>BGE-large-zh)]
-        Search --> BM[(BM25 关键词)]
-        Vec --> RR[Reranker 重排序]
-        BM --> RR
-    end
-
-    subgraph "知识库层"
-        Doc[(文档库)] --> Chunk[结构化切分]
-        Chunk --> Path[上下文路径标注]
-        Path --> Index[(分区索引)]
-    end
-
-    RR --> Gen[LLM 生成]
-    Index -.-> Search
-    Gen --> Score{置信度 1-5}
-    Score -->|>=3 分| Ans[最终回答]
-    Score -->|<3 分| Retry[二次检索/扩范围]
-    Retry --> Search
+<div class='diagram-section'>
+  <h3>🧠 Query理解：三级方案</h3>
+  <div class='diagram-desc'>规则→BERT→LLM逐级升级，兼顾速度/精度/成本</div>
+  <div class='step-list'>
+    <div class='step-item' style='background:#e8f0fe;'>
+      <div class='step-circle' style='background:#667eea;'>1</div>
+      <div class='step-content'>
+        <div class='step-title'>规则匹配 <span class='step-tag' style='color:#667eea;'>⚡ 零延迟</span></div>
+        <div class='step-desc'>关键词命中直接路由，覆盖大多数query</div>
       </div>
     </div>
-
-    <!-- Diagram 2: 数据准备三大策略 -->
-    <div class="diagram-section">
-      <h3>📦 数据准备：三大优化策略</h3>
-      <div class="diagram-desc">从固定字数切分到结构化智能分块</div>
-      <div class="diagram-grid-3">
-        <div class="grid-card">
-          <div class="grid-card-label">策略一</div>
-          <div class="grid-card-title">📄 结构化切分</div>
-          <div class="grid-card-desc">按文档逻辑结构（标题、段落、表格、列表）切分，而非固定 512 token</div>
-        </div>
-        <div class="grid-card">
-          <div class="grid-card-label">策略二</div>
-          <div class="grid-card-title">🔗 上下文路径</div>
-          <div class="grid-card-desc">每个 chunk 补充"产品名&gt;章节&gt;条款"层级路径，保留语义上下文</div>
-        </div>
-        <div class="grid-card">
-          <div class="grid-card-label">策略三</div>
-          <div class="grid-card-title">🔲 动态窗口</div>
-          <div class="grid-card-desc">检索命中时返回前后各一个 chunk，填补上下文空白</div>
-        </div>
-      </div>
-      <div class="effect-bar">📊 效果：召回准确率从 0.62 提升至 0.84</div>
-    </div>
-
-    <!-- Diagram 3: 混合检索 -->
-    <div class="diagram-section">
-      <h3>🎯 混合检索：三重保障</h3>
-      <div class="diagram-desc">向量语义 + 关键词精确 + Reranker 重排序</div>
-      <div class="diagram-grid-3">
-        <div class="grid-card grid-card-icon">
-          <div class="grid-card-label">方法一</div>
-          <div class="grid-card-emoji">🧮</div>
-          <div class="grid-card-title">向量检索</div>
-          <div class="grid-card-sub">BGE-large-zh 模型</div>
-          <div class="grid-card-desc">语义相似度匹配，模糊搜索</div>
-        </div>
-        <div class="grid-card grid-card-icon">
-          <div class="grid-card-label">方法二</div>
-          <div class="grid-card-emoji">🔑</div>
-          <div class="grid-card-title">BM25 关键词</div>
-          <div class="grid-card-sub">精确匹配</div>
-          <div class="grid-card-desc">关键词精确命中，弥补语义模糊</div>
-        </div>
-        <div class="grid-card grid-card-icon">
-          <div class="grid-card-label">方法三</div>
-          <div class="grid-card-emoji">⚖️</div>
-          <div class="grid-card-title">Reranker</div>
-          <div class="grid-card-sub">重排序模型</div>
-          <div class="grid-card-desc">混合结果统一排序，精排 Top-K</div>
-        </div>
-      </div>
-      <div class="info-bar">
-        <span>召回阈值 0.72</span><span class="bar-sep">|</span>
-        <span>语义模糊→向量</span><span class="bar-sep">|</span>
-        <span>关键词精确→BM25</span>
-      </div>
-      <div class="effect-bar">📊 效果：召回准确率从 0.84 提升至 0.91</div>
-    </div>
-
-    <!-- Diagram 4: Query 理解三级路由 -->
-    <div class="diagram-section">
-      <h3>🧠 Query 理解：三级意图识别路由</h3>
-      <div class="diagram-desc">规则匹配 → BERT 分类器 → LLM 兜底，层层递进</div>
-      <div class="step-list">
-        <div class="step-item" style="background:#e8f0fe;">
-          <div class="step-circle" style="background:#667eea;">1</div>
-          <div class="step-content">
-            <div class="step-title">第一级 · 规则匹配 <span class="step-tag" style="color:#667eea;">⚡ 零延迟</span></div>
-            <div class="step-desc">关键词/正则覆盖大部分常见问题，兜住常见 query</div>
-          </div>
-        </div>
-        <div class="step-item" style="background:#f0ebff;">
-          <div class="step-circle" style="background:#7c3aed;">2</div>
-          <div class="step-content">
-            <div class="step-title">第二级 · BERT 分类器 <span class="step-tag" style="color:#7c3aed;">⏱ 毫秒级</span></div>
-            <div class="step-desc">模型分类意图，高准确率，覆盖大多数场景</div>
-          </div>
-        </div>
-        <div class="step-item" style="background:#fef4e8;">
-          <div class="step-circle" style="background:#f59e0b;">3</div>
-          <div class="step-content">
-            <div class="step-title">第三级 · LLM 兜底 <span class="step-tag" style="color:#f59e0b;">🧠 最强理解</span></div>
-            <div class="step-desc">处理疑难 case，理解复杂语义，但成本较高</div>
-          </div>
-        </div>
-      </div>
-      <div class="info-bar" style="text-align:center;">
-        <strong>🔀 路由分发：</strong>知识问答→混合检索 &nbsp;|&nbsp; 计算求解→计算模块 &nbsp;|&nbsp; 数据查询→NL2SQL &nbsp;|&nbsp; 闲聊→通用对话
+    <div class='step-item' style='background:#f0ebff;'>
+      <div class='step-circle' style='background:#7c3aed;'>2</div>
+      <div class='step-content'>
+        <div class='step-title'>BERT分类器 <span class='step-tag' style='color:#7c3aed;'>⏱ 几十毫秒</span></div>
+        <div class='step-desc'>规则匹配不上的走分类器，4种意图分类</div>
       </div>
     </div>
-
-    <!-- Diagram 5: 工程协同 -->
-    <div class="diagram-section">
-      <h3>⚡ 工程协同：系统性优化</h3>
-      <div class="diagram-desc">RAG 生产落地的关键工程细节</div>
-      <div class="tag-grid-2">
-        <div class="tag-card">
-          <div class="tag-card-title">📤 文档管理</div>
-          <div class="tag-group">
-            <span class="tag-pill tag-blue">增量更新脚本</span>
-            <span class="tag-pill tag-blue">差异化 embedding</span>
-          </div>
-        </div>
-        <div class="tag-card">
-          <div class="tag-card-title">🎯 检索性能</div>
-          <div class="tag-group">
-            <span class="tag-pill tag-purple">Milvus 分区索引</span>
-            <span class="tag-pill tag-purple">只检索相关分区</span>
-          </div>
-        </div>
-        <div class="tag-card">
-          <div class="tag-card-title">⚡ 响应速度</div>
-          <div class="tag-group">
-            <span class="tag-pill tag-green">高频 query 缓存</span>
-            <span class="tag-pill tag-green">流式输出</span>
-          </div>
-        </div>
-        <div class="tag-card">
-          <div class="tag-card-title">📊 监控指标</div>
-          <div class="tag-group">
-            <span class="tag-pill tag-orange">召回准确率</span>
-            <span class="tag-pill tag-orange">投诉率</span>
-            <span class="tag-pill tag-orange">响应延迟</span>
-          </div>
-        </div>
+    <div class='step-item' style='background:#fef4e8;'>
+      <div class='step-circle' style='background:#f59e0b;'>3</div>
+      <div class='step-content'>
+        <div class='step-title'>LLM兜底 <span class='step-tag' style='color:#f59e0b;'>🧠 最强理解</span></div>
+        <div class='step-desc'>softmax最高概率仅0.4时才调LLM，控制成本</div>
       </div>
     </div>
+  </div>
+  <div class='info-bar' style='text-align:center;'>
+    <strong>🔀 路由分发：</strong>知识问答→混合检索 | 计算求解→计算模块 | 数据查询→NL2SQL | 闲聊→LLM对话
+  </div>
+</div>
 
-    <!-- Diagram 6: 面试回答框架 -->
-    <div class="diagram-section">
-      <h3>🌳 面试回答框架</h3>
-      <div class="diagram-desc">聊 RAG 难点，按四个层次组织回答</div>
-      <div class="tree-wrap">
-        <ul>
-          <li><span class="node-root">RAG 生产落地难点</span>
-            <ul>
-              <li><span class="node-label">🌐 系统性思维</span> <span class="tree-tag tag-blue">宏观视角</span></li>
-              <li><span class="node-label">🔍 具体坑点 <span class="arrow">→</span> Chunk 碎片化、检索噪音、意图误解、LLM 幻觉</span></li>
-              <li><span class="node-label">📊 量化指标 <span class="arrow">→</span> 召回率 0.62→0.84→0.91，投诉率 18%→7%</span></li>
-              <li><span class="node-label">⚙️ 工程能力 <span class="arrow">→</span> 增量更新、分区索引、缓存、监控</span></li>
-            </ul>
-          </li>
-        </ul>
+<div class='diagram-section'>
+  <h3>✍️ 生成阶段流程</h3>
+  <div class='diagram-desc'>强约束Prompt + 置信度评估 + 二次检索兜底</div>
+  <div class='css-flow'>
+    <div class='css-flow-row'>
+      <span class='css-node blue'>检索结果</span>
+      <span class='css-arrow'>→</span>
+      <span class='css-node blue'>Prompt组装</span>
+      <span class='css-arrow'>→</span>
+      <span class='css-node blue'>LLM生成</span>
+      <span class='css-arrow'>→</span>
+      <span class='css-node green'>输出回答</span>
+    </div>
+  </div>
+  <div class='info-bar'>
+    <span>置信度&gt;=3 → 直接输出</span><span class='bar-sep'>|</span>
+    <span>置信度&lt;3 → 触发二次检索</span>
+  </div>
+  <div class='effect-bar'>📊 效果：「答非所问」投诉率 18% → 7%</div>
+</div>
+
+<div class='diagram-section'>
+  <h3>⚡ 系统协同：工程优化全景</h3>
+  <div class='diagram-desc'>让所有模块协同到最优，才是RAG最难的环节</div>
+  <div class='tag-grid-2'>
+    <div class='tag-card'>
+      <div class='tag-card-title'>📤 文档管理</div>
+      <div class='tag-group'>
+        <span class='tag-pill tag-blue'>增量更新脚本</span>
+        <span class='tag-pill tag-blue'>差异化embedding</span>
       </div>
     </div>
+    <div class='tag-card'>
+      <div class='tag-card-title'>🎯 检索性能</div>
+      <div class='tag-group'>
+        <span class='tag-pill tag-purple'>Milvus分区索引</span>
+        <span class='tag-pill tag-purple'>只检索相关分区</span>
+      </div>
+    </div>
+    <div class='tag-card'>
+      <div class='tag-card-title'>⚡ 响应速度</div>
+      <div class='tag-group'>
+        <span class='tag-pill tag-green'>高频query缓存</span>
+        <span class='tag-pill tag-green'>流式输出</span>
+      </div>
+    </div>
+    <div class='tag-card'>
+      <div class='tag-card-title'>📊 Prompt格式</div>
+      <div class='tag-group'>
+        <span class='tag-pill tag-orange'>chunk加序号标签</span>
+        <span class='tag-pill tag-orange'>独立信息非连贯文章</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class='diagram-section'>
+  <h3>📈 关键指标提升汇总</h3>
+  <div class='diagram-desc'>从Demo到生产每一步的量化效果</div>
+  <div class='step-list'>
+    <div class='step-item' style='background:#e8f0fe;'>
+      <div class='step-circle' style='background:#667eea;'>1</div>
+      <div class='step-content'>
+        <div class='step-title'>切块策略优化</div>
+        <div class='step-desc'>召回准确率 <strong>0.62 → 0.84</strong></div>
+      </div>
+    </div>
+    <div class='step-item' style='background:#f0ebff;'>
+      <div class='step-circle' style='background:#7c3aed;'>2</div>
+      <div class='step-content'>
+        <div class='step-title'>混合检索+Reranker</div>
+        <div class='step-desc'>召回准确率 <strong>0.84 → 0.91</strong></div>
+      </div>
+    </div>
+    <div class='step-item' style='background:#fef4e8;'>
+      <div class='step-circle' style='background:#f59e0b;'>3</div>
+      <div class='step-content'>
+        <div class='step-title'>Prompt约束+置信度</div>
+        <div class='step-desc'>「答非所问」投诉率 <strong>18% → 7%</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
   </div>
 
   <!-- ===== My Note Tab (blank, user fills in) ===== -->
@@ -1055,10 +1155,16 @@ function renderDiagrams() {
   document.querySelectorAll('#tab-diagram .mermaid').forEach((el, idx) => {
     if (el.querySelector('svg')) return;
     const code = el.textContent.trim();
+    el.setAttribute('data-mermaid-source', code);
     const id = 'mermaid-' + Date.now() + '-' + idx;
     const retryCount = parseInt(el.dataset.retry || '0');
     mermaid.render(id, code).then(({ svg }) => {
       el.innerHTML = svg;
+      // Add save hint below Mermaid SVG
+      const hint = document.createElement('div');
+      hint.className = 'mermaid-save-hint';
+      hint.textContent = '💡 长按图片可保存';
+      el.parentNode.insertBefore(hint, el.nextSibling);
     }).catch(err => {
       console.error('Mermaid render error (attempt ' + (retryCount + 1) + '):', err);
       if (retryCount < 1) {
@@ -1072,7 +1178,32 @@ function renderDiagrams() {
   });
 }
 
+// ===== Scroll-to-hide Tab Bar =====
+(function(){
+  const bar = document.querySelector('.tab-bar-fixed');
+  if(!bar) return;
+  let lastY = window.scrollY, ticking = false;
+  window.addEventListener('scroll', function(){
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){
+      const y = window.scrollY;
+      if(y > lastY && y > 60) bar.classList.add('tab-hidden');
+      else bar.classList.remove('tab-hidden');
+      lastY = y;
+      ticking = false;
+    });
+  }, {passive:true});
+})();
+
 // Tab switching
+function updateFabIcon(){
+  const fab = document.querySelector('.fab-copy');
+  if(!fab) return;
+  fab.textContent = '📋';
+  fab.title = '复制为文字';
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
@@ -1088,12 +1219,33 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (tabId === 'mynote') {
       loadMyNote();
     }
+    updateFabIcon();
   });
 });
 
-// ===== Copy as Markdown =====
-function copyAsMarkdown(){
-  const root = document.querySelector('#tab-text .text-content');
+// ===== Smart Copy =====
+function getActiveTab(){
+  const btn = document.querySelector('.tab-btn.active');
+  return btn ? btn.getAttribute('data-tab') : 'text';
+}
+
+function fabSuccess(){
+  const fab = document.querySelector('.fab-copy');
+  if(!fab) return;
+  fab.classList.add('success');
+  fab.textContent = '✅';
+  setTimeout(() => { fab.classList.remove('success'); updateFabIcon(); }, 1500);
+}
+
+function smartCopy(){
+  const tab = getActiveTab();
+  if(tab === 'diagram') return copyDiagramText();
+  return copyAsMarkdown(tab);
+}
+
+function copyAsMarkdown(tab){
+  const selector = tab === 'mynote' ? '#tab-mynote .mynote-editor' : '#tab-text .text-content';
+  const root = document.querySelector(selector);
   if(!root) return;
   let md = '';
   for(const el of root.children){
@@ -1101,25 +1253,44 @@ function copyAsMarkdown(){
   }
   md = md.trim();
   
-  // Fallback: 如果 Markdown 转换结果为空，降级复制纯文本
   if(!md){
     const plain = root.innerText.trim();
-    navigator.clipboard.writeText(plain).then(() => {
-      const btn = document.querySelector('.tab-copy-btn');
-      btn.textContent = '📋';
-      setTimeout(() => btn.textContent = '📋', 1500);
-    }).catch(() => alert('复制失败'));
+    navigator.clipboard.writeText(plain).then(fabSuccess).catch(() => alert('复制失败'));
     return;
   }
   
-  navigator.clipboard.writeText(md).then(()=>{
-    const btn = document.querySelector('.tab-copy-btn');
-    const orig = btn.textContent;
-    btn.textContent = '✅';
-    setTimeout(() => btn.textContent = orig, 1500);
-  }).catch(() => {
-    // 二次降级: clipboard API 失败，回退到纯文本
+  navigator.clipboard.writeText(md).then(fabSuccess).catch(() => {
     const plain = root.innerText.trim();
+    navigator.clipboard.writeText(plain).catch(() => alert('复制失败，请手动选中文字复制'));
+  });
+}
+
+function copyDiagramText(){
+  const section = document.querySelector('#tab-diagram');
+  if(!section) return;
+  // Extract text from all diagram sections
+  const parts = [];
+  section.querySelectorAll('.diagram-section, .card').forEach(el => {
+    const title = el.querySelector('h3');
+    const desc = el.querySelector('.diagram-desc');
+    if(title) parts.push('## ' + title.textContent.trim());
+    if(desc) parts.push(desc.textContent.trim());
+    // Extract text from grid cards, step items, tag cards, tree nodes, etc.
+    el.querySelectorAll('.grid-card-title, .step-title, .tag-card-title, .node-label, .node-leaf, .tl-title, .tl-desc, .node-root').forEach(n => {
+      const t = n.textContent.trim();
+      if(t && !parts.includes(t)) parts.push('· ' + t);
+    });
+    // Mermaid diagram — add source as code block
+    el.querySelectorAll('.mermaid').forEach(m => {
+      const src = m.getAttribute('data-mermaid-source');
+      if(src) parts.push('```mermaid\n' + src + '\n```');
+    });
+  });
+  // If nothing structured found, fallback to innerText
+  const text = parts.length > 0 ? parts.join('\n\n') : section.innerText.trim();
+  if(!text){ alert('图解无可复制内容'); return; }
+  navigator.clipboard.writeText(text).then(fabSuccess).catch(() => {
+    const plain = section.innerText.trim();
     navigator.clipboard.writeText(plain).catch(() => alert('复制失败，请手动选中文字复制'));
   });
 }
@@ -1248,7 +1419,7 @@ function tableToMd(table){
 }
 
 // ===== My Note (persisted to localStorage) =====
-const MN_KEY='ai_note_mynote_' + encodeURIComponent('RAG 从 Demo 到生产：四大关键环节完整拆解');
+const MN_KEY='ai_note_mynote_' + encodeURIComponent('RAG从Demo到生产');
 
 function loadMyNote(){
   const editor=document.getElementById('mynoteEditor');

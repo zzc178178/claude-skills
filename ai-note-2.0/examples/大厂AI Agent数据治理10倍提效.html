@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>大厂如何用 AI Agent 提升数据治理效率 10 倍 - AI 笔记</title>
+<title>大厂AI Agent数据治理10倍提效 - AI 笔记</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
 /* ===== Reset & Base ===== */
@@ -36,6 +36,11 @@ body {
   padding: 0 16px 12px;
   background: linear-gradient(to top, #f0f2f5 70%, transparent);
   pointer-events: none;
+  transform: translateY(0);
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.tab-bar-fixed.tab-hidden {
+  transform: translateY(100%);
 }
 .tab-bar-fixed .tab-nav {
   max-width: 860px;
@@ -159,20 +164,37 @@ body {
   position: relative;
   font-family: inherit;
 }
-.tab-copy-btn {
-  padding: 14px 18px;
+/* ===== FAB Copy Button ===== */
+.fab-copy {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  z-index: 101;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   border: none;
-  border-left: 1px solid #eef0f4;
-  background: transparent;
-  font-size: 0.8rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 1.3rem;
   cursor: pointer;
-  color: #8896ab;
-  font-family: inherit;
-  transition: all 0.3s;
-  white-space: nowrap;
-  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.tab-copy-btn:hover { color: #667eea; background: #f8f9fb; }
+.fab-copy:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(102,126,234,0.5);
+}
+.fab-copy:active {
+  transform: scale(0.95);
+}
+.fab-copy.success {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  box-shadow: 0 4px 16px rgba(52,211,153,0.4);
+}
 .tab-btn::after {
   content: '';
   position: absolute;
@@ -376,6 +398,12 @@ tr:hover td { background: #f8f9fb; }
 .diagram-section .mermaid svg {
   max-width: 100%;
 }
+.mermaid-save-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-top: 4px;
+}
 
 /* ===== CSS Tree (复用树形结构：选型/分类/层级) ===== */
 .tree-wrap {
@@ -450,12 +478,40 @@ tr:hover td { background: #f8f9fb; }
   margin-left: 4px;
   font-weight: 600;
 }
+.node-leaf {
+  background: #f0fff4;
+  color: #276749;
+  padding: 2px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  font-weight: 500;
+  font-size: 0.88rem;
+}
+.node-leaf .tree-tag {
+  font-size: 0.75rem;
+  padding: 1px 8px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 600;
+}
 
-/* ===== 模式②③：三列网格卡片 ===== */
+/* ===== 模式②③④：多列网格卡片 ===== */
 .diagram-grid-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
+  margin-top: 8px;
+}
+.diagram-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.diagram-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
   margin-top: 8px;
 }
 .grid-card {
@@ -707,6 +763,17 @@ tr:hover td { background: #f8f9fb; }
   .diagram-grid-3 .grid-card-title { font-size: 0.85rem; }
   .diagram-grid-3 .grid-card-sub { font-size: 0.72rem; }
   .diagram-grid-3 .grid-card-desc { font-size: 0.75rem; }
+  .diagram-grid-4 { gap: 5px; }
+  .diagram-grid-4 .grid-card { padding: 8px; }
+  .diagram-grid-4 .grid-card-emoji { font-size: 1.1rem; }
+  .diagram-grid-4 .grid-card-title { font-size: 0.8rem; }
+  .diagram-grid-4 .grid-card-sub { font-size: 0.7rem; }
+  .diagram-grid-4 .grid-card-desc { font-size: 0.7rem; }
+  .diagram-grid-auto { gap: 5px; }
+  .diagram-grid-auto .grid-card { padding: 8px; }
+  .diagram-grid-auto .grid-card-emoji { font-size: 1.1rem; }
+  .diagram-grid-auto .grid-card-title { font-size: 0.8rem; }
+  .diagram-grid-auto .grid-card-desc { font-size: 0.7rem; }
   .tag-grid-2 { gap: 6px; }
   /* Mermaid diagrams scroll horizontally if too wide */
   .diagram-section .mermaid { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -722,7 +789,7 @@ tr:hover td { background: #f8f9fb; }
 @media (max-width: 380px) {
   .tab-btn { font-size: 0.78rem; padding: 10px 6px; }
   .tab-btn .icon { display: none; }
-  .tab-copy-btn { padding: 10px 10px; }
+  .fab-copy { width: 42px; height: 42px; right: 14px; bottom: 80px; font-size: 1.1rem; }
 }
 </style>
 </head>
@@ -732,10 +799,10 @@ tr:hover td { background: #f8f9fb; }
 
   <!-- ===== Header ===== -->
   <div class="note-header">
-    <div class="note-tag">AI Agent</div>
-    <h1>大厂如何用 AI Agent 提升数据治理效率 10 倍</h1>
-    <div class="subtitle">4 层分层架构 + 3 大落地场景 + 中小企业低成本借鉴</div>
-    <div class='note-source'><span class='source-label'>原文来源</span><a class='source-link' href='https://mp.weixin.qq.com/s/PVsQwkR0x1nf94caaw2cig' target='_blank'>BAT大数据架构 · 公众号</a></div>
+    <div class="note-tag">AI Agent · 数据治理</div>
+    <h1>大厂AI Agent数据治理10倍提效</h1>
+    <div class="subtitle">4层架构 × 3大场景 × 4个抓手，中小企业可低成本借鉴</div>
+    <div class='note-source'><span class='source-label'>原文来源</span><a class='source-link' href='https://mp.weixin.qq.com/s/PVsQwkR0x1nf94caaw2cig' target='_blank'>微信公众号</a></div>
   </div>
 
   <!-- ===== Fixed Tab Navigation ===== -->
@@ -750,22 +817,33 @@ tr:hover td { background: #f8f9fb; }
       <button class="tab-btn" data-tab="mynote" role="tab" aria-selected="false">
         <span class="icon">✏️</span>随手记
       </button>
-      <button class="tab-copy-btn" onclick="event.stopPropagation();copyAsMarkdown()" title="复制文字为 Markdown">📋</button>
     </div>
   </div>
+
+  <!-- ===== FAB Copy Button ===== -->
+  <button class="fab-copy" onclick="smartCopy()" title="复制当前内容">📋</button>
 
   <!-- ===== Text Tab ===== -->
   <div class="tab-content text-tab active" id="tab-text" role="tabpanel">
     <div class="card">
       <div class="text-content">
-        <h2>核心架构：4 层分层协同</h2><p>避免「单一 Agent 包办」，实现「专人专岗」协作。</p><p>这套架构的核心思想是：每个 Agent 只做一件事、做好一件事，通过标准化的输入输出接口串联成流水线，既降低单个 Agent 的复杂度，也便于独立迭代。</p><table><thead><tr><th>层级</th><th>作用</th></tr></thead><tbody><tr><td><strong>底层基础层</strong></td><td>数据中台（跨部门/多模态数据归集）+ 大模型基座（语义理解、决策）</td></tr><tr><td><strong>核心 Agent 层</strong></td><td>采集 Agent、治理 Agent、监控调度 Agent、合规审计 Agent</td></tr><tr><td><strong>场景适配层</strong></td><td>政务、互联网等行业定制化适配</td></tr><tr><td><strong>效果监控层</strong></td><td>效率量化 + 质量闭环，持续优化</td></tr></tbody></table><p>大模型基座的选择决定了语义理解的上限，数据中台的质量决定了治理效果的下限——两者缺一不可。</p><h2>三大落地场景</h2><h3>1. 海量多模态数据自动化清洗</h3><p><strong>效率提升：</strong>10 倍以上（每小时 10 万+条）</p><p>清洗 Agent 自主识别重复值/缺失值/格式错误 → 调用对应算子 → 批量处理。整个流程无需人工介入，人力成本接近零。</p><div class='highlight-box highlight-blue'><strong>伪代码逻辑：</strong><br>IdentifyIssues() → CallCleanOperator() → BatchClean()</div><p>这里的「识别」依赖大模型的语义判断能力，能区分「真正的空值」和「有意留空的字段」，避免误清洗。</p><h3>2. 多模态数据自动化标注</h3><p><strong>效率提升：</strong>80 倍以上（标注精度 98%）</p><p>标注 Agent 适配文本/音频/日志 → 嵌入专业规则 → 联动数据洞察 Agent 挖掘价值。</p><div class='highlight-box highlight-green'><strong>流程：</strong><br>AdaptMultimodalData() → ProcessText/Audio/Log → AnnotationWithInsight()</div><p>多模态标注的难点在于不同数据格式需要不同的解析策略，Agent 通过统一的调度接口屏蔽了这个差异。</p><h3>3. 跨部门数据血缘追踪 + 合规审计</h3><p><strong>效率提升：</strong>全链路自动化</p><p>血缘追踪 Agent 自动生成可视化图谱 + 异常预警 → 合规审计 Agent 生成报告。</p><div class='highlight-box highlight-orange'><strong>流程：</strong><br>TrackLineage() → MonitorAbnormal() → ComplianceAudit()</div><p>血缘图谱是数据治理的「基础设施」——有了它，才能说清楚数据从哪来、经过哪些处理、流向哪里，这是审计和问责的前提。</p><h2>效率提升的 4 个抓手</h2><ul><li><strong>多 Agent 协同</strong>：拆分工种，避免大而全；每个 Agent 专注单一任务，可独立测试和替换。</li><li><strong>大模型 + 数据中台深度融合</strong>：打破数据孤岛；语义理解层和数据管理层形成闭环，互相增强。</li><li><strong>场景化定制</strong>：优先落地高耗时、高价值场景；不要一开始就追求全面覆盖。</li><li><strong>效率量化 + 持续优化</strong>：形成反馈闭环；每个 Agent 的产出质量都需要量化指标驱动改进。</li></ul><h2>中小企业借鉴</h2><p>大厂的完整架构投入成本高，中小企业更适合「轻量版」。</p><ul><li>不盲目照搬，先落地单一场景（如电商评论情感标注），验证ROI后再扩展。</li><li>借力开源（LangChain + DataFlow + Llama 3），成本降低 80%，能满足大多数场景需求。</li><li>聚焦电商评论标注、金融数据清洗等高价值场景——ROI 最高，落地最快。</li></ul><div class='footer-tags'><span class='tag-pill tag-blue'>AI Agent</span><span class='tag-pill tag-blue'>数据治理</span><span class='tag-pill tag-blue'>大厂架构</span><span class='tag-pill tag-blue'>多模态</span><span class='tag-pill tag-blue'>自动化</span></div>
+        <h2>一、大厂AI Agent数据治理核心架构</h2><h3>1. 分层协同的4层体系</h3><p>大厂搭建了<span class='tag-pill tag-blue'>分层协同</span>、<span class='tag-pill tag-blue'>自主闭环</span>的4层架构，从底层数据汇聚到顶层效果量化，层层递进：</p><ul><li><strong>底层基础层</strong>：数据中台打破数据孤岛，统一归集多模态数据；大模型基座提供语义理解与自主决策能力，二者协同提供「数据+能力」双重支撑</li><li><strong>核心Agent层</strong>：多智能体协同体系，实现专人专岗——采集、治理、监控、合规四大Agent各司其职</li><li><strong>场景适配层</strong>：行业定制化适配，政务场景解决部门壁垒，互联网场景聚焦用户反馈与产品日志</li><li><strong>效果监控层</strong>：实时统计速度、人工干预率等指标，自动校验数据质量，建立「反馈-优化」闭环</li></ul><div class='highlight-box blue'><strong>🔑 核心理念</strong>：不是单个Agent解决一切，而是多Agent分工协作 + 层级解耦，让每层只做一件事且做到极致</div><h3>2. 核心Agent层的四大角色</h3><p>核心Agent层是整个架构的「大脑」，按场景拆分出4个专职Agent：</p><ul><li><span class='tag-pill tag-blue'>数据采集Agent</span>：自主爬取归集，自动识别格式，采集效率提升<strong>8倍</strong>以上</li><li><span class='tag-pill tag-purple'>数据治理Agent</span>：细分为清洗Agent、标注Agent、血缘追踪Agent，完成全流程自动化</li><li><span class='tag-pill tag-green'>监控调度Agent</span>：实时监控状态，排查故障，动态分配资源</li><li><span class='tag-pill tag-orange'>合规审计Agent</span>：识别敏感数据，脱敏处理，生成合规报告</li></ul><h3>3. 效率数据一览</h3><table><tr><th>环节</th><th>传统人工</th><th>Agent提效后</th><th>提升倍数</th></tr><tr><td>数据采集</td><td>手动归集</td><td>自动爬取+格式识别</td><td>8倍+</td></tr><tr><td>数据清洗</td><td>每人每天1000条</td><td>每小时10万+条</td><td>100倍+</td></tr><tr><td>数据标注</td><td>人工逐条标注</td><td>多模态自动标注</td><td>80倍+</td></tr><tr><td>合规审计</td><td>人工抽查+事后审查</td><td>实时识别+自动报告</td><td>10倍+</td></tr></table><h2>二、3大落地场景与代码逻辑</h2><h3>1. 场景一：海量多模态数据自动化清洗</h3><p><span class='tag-pill tag-blue'>实战案例</span>：政务数据治理。清洗Agent自动识别重复/缺失/错误格式，智能调用算子，支持PB级批量处理。</p><p>核心代码逻辑（CleanAgent类）：</p><ul><li><strong>识别数据问题</strong>：调用大模型分析数据样本，判断问题类型（重复/缺失/格式错误/编码异常）</li><li><strong>智能调用算子</strong>：根据问题类型自动匹配算子——remove_duplicates、fill_missing、fix_format、fix_encoding</li><li><strong>批量处理主逻辑</strong>：遍历数据集，检测问题，匹配算子，执行清洗，返回结果</li></ul><div class='highlight-box green'><strong>📊 效果</strong>：准确率提升至99%，人工干预率低于1%，每小时处理10万+条政务数据</div><h3>2. 场景二：多模态数据自动化标注</h3><p><span class='tag-pill tag-purple'>实战案例</span>：互联网服务数据治理。标注Agent与数据洞察Agent协同，适配文本/音频/日志，嵌入专业规则。</p><p>核心代码逻辑（AnnotationAgent类）：</p><ul><li><strong>多模态适配</strong>：文本用情感分类，音频用信息提取，日志用模式匹配</li><li><strong>文本情感分类</strong>：调用大模型对用户评论进行情感标注（正向/负向/中性）</li><li><strong>音频信息提取</strong>：语音转文本 + 关键信息抽取</li><li><strong>联动DataInsightAgent</strong>：标注后自动挖掘价值，生成知识管理看板</li></ul><div class='highlight-box green'><strong>📊 效果</strong>：标注效率较传统人工提升80倍以上，标注精度达98%</div><h3>3. 场景三：跨部门数据血缘追踪+合规审计</h3><p><span class='tag-pill tag-orange'>实战案例</span>：互联网+政务融合项目。血缘追踪Agent与合规审计Agent协同，自动记录节点生成可视化图谱。</p><p>核心代码逻辑（LineageTrackingAgent类）：</p><ul><li><strong>自动梳理链路</strong>：追踪数据从源头到消费端的完整流转路径</li><li><strong>异常预警推送</strong>：检测到数据异常（缺失/延迟/不一致）实时推送告警</li><li><strong>联动ComplianceAuditAgent</strong>：自动生成标准化审计报告，识别敏感数据并脱敏</li></ul><div class='highlight-box orange'><strong>⚠️ 关键价值</strong>：破解跨部门数据壁垒，政务数据调用效率提升70%，惠企政策申请时间从3天缩短至30分钟</div><h2>三、AI Agent数据治理的4个抓手</h2><h3>1. 多Agent协同，替代人工重复性工作</h3><p>按场景拆分Agent分工，每个Agent只负责一个领域，做到专精。中小企业可优先落地1-2个核心场景，依托<span class='tag-pill tag-blue'>LangChain</span>轻量化定制。</p><h3>2. 「大模型+数据中台」深度融合</h3><p>大模型提供「大脑」（理解+决策），数据中台提供「血液」（数据汇聚+分发），二者缺一不可。中小企业可依托开源<span class='tag-pill tag-purple'>DataFlow</span> + <span class='tag-pill tag-purple'>Llama 3</span>搭建基础支撑。</p><h3>3. 场景化定制，避免通用化治理浪费</h3><p>优先落地高耗时、高价值场景，不追求全面覆盖。通用化治理看似全面，实则每个场景都打折扣——<strong>一个做到90分的场景Agent，胜过十个做到60分的通用Agent</strong>。</p><h3>4. 建立效率量化+持续优化闭环</h3><p>建立简单可量化的指标体系：</p><ul><li><span class='tag-pill tag-green'>人工干预率</span>：低于5%为优秀</li><li><span class='tag-pill tag-green'>处理速度</span>：按场景设定基准线</li><li><span class='tag-pill tag-green'>数据准确率</span>：清洗/标注准确率需达98%+</li></ul><p>定期根据指标优化Agent指令和流程，形成持续改进的飞轮。</p><h2>四、中小企业借鉴指南</h2><h3>1. 不盲目追求「大厂同款架构」</h3><p>大厂4层架构是为PB级数据+数百人团队设计的。中小企业应优先落地「单一场景+轻量化Agent」，逐步拓展。不要一上来就搭建多Agent协同体系，先让一个Agent跑通一个场景。</p><h3>2. 借力开源工具，降低研发成本</h3><p>核心工具链已高度成熟，中小企业成本可降低<span class='tag-pill tag-green'>80%</span>：</p><ul><li><strong>Agent框架</strong>：LangChain（轻量化定制，无需从零开发）</li><li><strong>数据处理</strong>：DataFlow（开源数据中台）</li><li><strong>大模型</strong>：Llama 3（开源，仅需少量定制配置）</li></ul><h3>3. 聚焦高价值场景，快速看到效果</h3><p>聚焦自身高价值场景（如电商数据清洗、评论标注），快速实现5-8倍效率提升后再推广。验证成功的标志：<strong>一个场景跑通后，团队主动要求扩展到其他场景</strong>，而不是管理层推动。</p><blockquote>Agent的最终目的不是替代数据工程师，而是将人从「洗数据、贴标签、查文档」的繁琐泥潭中解放出来，去思考数据背后的业务价值。</blockquote><div class='footer-tags'><span class='tag-pill tag-blue'>AI Agent</span> <span class='tag-pill tag-purple'>数据治理</span> <span class='tag-pill tag-green'>自动化清洗</span> <span class='tag-pill tag-orange'>合规审计</span> <span class='tag-pill tag-blue'>中小企业</span></div>
       </div>
     </div>
   </div>
 
   <!-- ===== Diagram Tab ===== -->
   <div class="tab-content diagram-tab" id="tab-diagram" role="tabpanel">
-    <div class='diagram-section'><h3>🏗️ 4 层分层架构</h3><div class='diagram-desc'>从底层基础设施到效果监控的完整链路</div><div class='step-list'><div class='step-item' style='background:#e8f0fe;'><div class='step-circle' style='background:#667eea;'>1</div><div class='step-content'><div class='step-title'>底层基础层 <span class='step-tag' style='color:#667eea;'>数据 + 模型</span></div><div class='step-desc'>数据中台归集 + 大模型基座语义理解</div></div></div><div class='step-item' style='background:#f0ebff;'><div class='step-circle' style='background:#7c3aed;'>2</div><div class='step-content'><div class='step-title'>核心 Agent 层 <span class='step-tag' style='color:#7c3aed;'>多智能体</span></div><div class='step-desc'>采集 / 治理 / 监控调度 / 合规审计 Agent</div></div></div><div class='step-item' style='background:#fef4e8;'><div class='step-circle' style='background:#f59e0b;'>3</div><div class='step-content'><div class='step-title'>场景适配层 <span class='step-tag' style='color:#f59e0b;'>行业定制</span></div><div class='step-desc'>政务、互联网等行业适配</div></div></div><div class='step-item' style='background:#e8fae8;'><div class='step-circle' style='background:#22c55e;'>4</div><div class='step-content'><div class='step-title'>效果监控层 <span class='step-tag' style='color:#22c55e;'>持续优化</span></div><div class='step-desc'>效率量化 + 质量闭环反馈</div></div></div></div></div><div class='diagram-section'><h3>🎯 三大落地场景</h3><div class='diagram-desc'>头部大厂实战案例</div><div class='diagram-grid-3'><div class='grid-card grid-card-icon'><div class='grid-card-label'>场景一</div><div class='grid-card-emoji'>🧹</div><div class='grid-card-title'>数据清洗</div><div class='grid-card-sub'>10 倍提升</div><div class='grid-card-desc'>清洗 Agent 自主识别缺失值/格式错误，批量处理</div></div><div class='grid-card grid-card-icon'><div class='grid-card-label'>场景二</div><div class='grid-card-emoji'>🏷️</div><div class='grid-card-title'>数据标注</div><div class='grid-card-sub'>80 倍提升</div><div class='grid-card-desc'>适配文本/音频/日志，联动洞察 Agent</div></div><div class='grid-card grid-card-icon'><div class='grid-card-label'>场景三</div><div class='grid-card-emoji'>🔗</div><div class='grid-card-title'>血缘追踪</div><div class='grid-card-sub'>全链路自动化</div><div class='grid-card-desc'>可视化图谱 + 异常预警 + 合规报告</div></div></div></div><div class='diagram-section'><h3>⚡ 效率提升 4 个抓手</h3><div class='diagram-desc'>可直接复用的方法论</div><div class='tag-grid-2'><div class='tag-card'><div class='tag-card-title'>🤝 多 Agent 协同</div><div class='tag-group'><span class='tag-pill tag-blue'>拆分工种</span><span class='tag-pill tag-blue'>专人专岗</span></div></div><div class='tag-card'><div class='tag-card-title'>🔗 深度融合</div><div class='tag-group'><span class='tag-pill tag-purple'>打破孤岛</span><span class='tag-pill tag-purple'>语义理解</span></div></div><div class='tag-card'><div class='tag-card-title'>🎯 场景化定制</div><div class='tag-group'><span class='tag-pill tag-green'>高耗时优先</span><span class='tag-pill tag-green'>高价值优先</span></div></div><div class='tag-card'><div class='tag-card-title'>📊 量化闭环</div><div class='tag-group'><span class='tag-pill tag-orange'>效率量化</span><span class='tag-pill tag-orange'>质量追踪</span></div></div></div></div>
+    <div class='diagram-section'><h3>🏗️ 大厂AI Agent数据治理4层架构</h3><div class='diagram-desc'>从底层数据汇聚到顶层效果量化的分层协同体系</div><div class='mermaid'>
+flowchart LR
+    A[数据中台+大模型] --> B[核心Agent层]
+    B --> C[场景适配层]
+    C --> D[效果监控层]
+    B --> B1[采集Agent]
+    B --> B2[治理Agent]
+    B --> B3[监控Agent]
+    B --> B4[合规Agent]
+  </div></div><div class='diagram-section'><h3>⚡ 4大Agent角色分工</h3><div class='diagram-desc'>专人专岗，每个Agent只做一件事且做到极致</div><div class='diagram-grid-4'><div class='grid-card grid-card-icon'><div class='grid-card-label'>角色一</div><div class='grid-card-emoji'>📥</div><div class='grid-card-title'>数据采集Agent</div><div class='grid-card-sub'>效率提升8倍+</div><div class='grid-card-desc'>自主爬取归集，自动识别格式</div></div><div class='grid-card grid-card-icon'><div class='grid-card-label'>角色二</div><div class='grid-card-emoji'>🧹</div><div class='grid-card-title'>数据治理Agent</div><div class='grid-card-sub'>含清洗/标注/血缘</div><div class='grid-card-desc'>全流程自动化，准确率99%</div></div><div class='grid-card grid-card-icon'><div class='grid-card-label'>角色三</div><div class='grid-card-emoji'>📡</div><div class='grid-card-title'>监控调度Agent</div><div class='grid-card-sub'>实时动态分配</div><div class='grid-card-desc'>监控状态，排查故障，动态分配资源</div></div><div class='grid-card grid-card-icon'><div class='grid-card-label'>角色四</div><div class='grid-card-emoji'>🛡️</div><div class='grid-card-title'>合规审计Agent</div><div class='grid-card-sub'>自动生成报告</div><div class='grid-card-desc'>识别敏感数据，脱敏处理</div></div></div></div><div class='diagram-section'><h3>📊 效率跃迁对比</h3><div class='diagram-desc'>Agent模式下各环节效率提升倍数</div><div class='step-list'><div class='step-item' style='background:#e8f0fe;'><div class='step-circle' style='background:#667eea;'>1</div><div class='step-content'><div class='step-title'>数据采集 <span class='step-tag' style='color:#667eea;'>8倍+</span></div><div class='step-desc'>手动归集 - 自动爬取+格式识别</div></div></div><div class='step-item' style='background:#f0ebff;'><div class='step-circle' style='background:#7c3aed;'>2</div><div class='step-content'><div class='step-title'>数据清洗 <span class='step-tag' style='color:#7c3aed;'>100倍+</span></div><div class='step-desc'>每人每天1000条 - 每小时10万+条，准确率99%</div></div></div><div class='step-item' style='background:#fef4e8;'><div class='step-circle' style='background:#f59e0b;'>3</div><div class='step-content'><div class='step-title'>数据标注 <span class='step-tag' style='color:#f59e0b;'>80倍+</span></div><div class='step-desc'>人工逐条 - 多模态自动标注，精度98%</div></div></div><div class='step-item' style='background:#ecfdf5;'><div class='step-circle' style='background:#059669;'>4</div><div class='step-content'><div class='step-title'>合规审计 <span class='step-tag' style='color:#059669;'>10倍+</span></div><div class='step-desc'>人工抽查 - 实时识别+自动报告</div></div></div></div></div><div class='diagram-section'><h3>🎯 3大落地场景</h3><div class='diagram-desc'>从清洗到标注到合规，场景化Agent落地路径</div><div class='diagram-grid-3'><div class='grid-card'><div class='grid-card-label'>场景一</div><div class='grid-card-title'>海量多模态清洗</div><div class='grid-card-desc'>CleanAgent自动识别重复/缺失/错误格式，智能调用算子，PB级批量处理</div></div><div class='grid-card'><div class='grid-card-label'>场景二</div><div class='grid-card-title'>多模态自动标注</div><div class='grid-card-desc'>AnnotationAgent适配文本/音频/日志，联动DataInsightAgent挖掘价值</div></div><div class='grid-card'><div class='grid-card-label'>场景三</div><div class='grid-card-title'>血缘追踪+合规审计</div><div class='grid-card-desc'>LineageTrackingAgent梳理链路，联动ComplianceAuditAgent生成审计报告</div></div></div></div><div class='diagram-section'><h3>💡 中小企业落地路径</h3><div class='diagram-desc'>不追求大厂同款，轻量化起步逐步拓展</div><div class='css-flow'><div class='css-flow-row'><span class='css-node blue'>单一场景</span><span class='css-arrow'>→</span><span class='css-node blue'>轻量Agent</span><span class='css-arrow'>→</span><span class='css-node green'>5-8倍提效</span><span class='css-arrow'>→</span><span class='css-node green'>逐步扩展</span></div></div><div class='info-bar'><span>开源工具链：LangChain + DataFlow + Llama 3</span><span class='bar-sep'>|</span><span>成本降低80%</span></div></div>
   </div>
 
   <!-- ===== My Note Tab (blank, user fills in) ===== -->
@@ -803,10 +881,16 @@ function renderDiagrams() {
   document.querySelectorAll('#tab-diagram .mermaid').forEach((el, idx) => {
     if (el.querySelector('svg')) return;
     const code = el.textContent.trim();
+    el.setAttribute('data-mermaid-source', code);
     const id = 'mermaid-' + Date.now() + '-' + idx;
     const retryCount = parseInt(el.dataset.retry || '0');
     mermaid.render(id, code).then(({ svg }) => {
       el.innerHTML = svg;
+      // Add save hint below Mermaid SVG
+      const hint = document.createElement('div');
+      hint.className = 'mermaid-save-hint';
+      hint.textContent = '💡 长按图片可保存';
+      el.parentNode.insertBefore(hint, el.nextSibling);
     }).catch(err => {
       console.error('Mermaid render error (attempt ' + (retryCount + 1) + '):', err);
       if (retryCount < 1) {
@@ -820,7 +904,32 @@ function renderDiagrams() {
   });
 }
 
+// ===== Scroll-to-hide Tab Bar =====
+(function(){
+  const bar = document.querySelector('.tab-bar-fixed');
+  if(!bar) return;
+  let lastY = window.scrollY, ticking = false;
+  window.addEventListener('scroll', function(){
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){
+      const y = window.scrollY;
+      if(y > lastY && y > 60) bar.classList.add('tab-hidden');
+      else bar.classList.remove('tab-hidden');
+      lastY = y;
+      ticking = false;
+    });
+  }, {passive:true});
+})();
+
 // Tab switching
+function updateFabIcon(){
+  const fab = document.querySelector('.fab-copy');
+  if(!fab) return;
+  fab.textContent = '📋';
+  fab.title = '复制为文字';
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
@@ -836,12 +945,33 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (tabId === 'mynote') {
       loadMyNote();
     }
+    updateFabIcon();
   });
 });
 
-// ===== Copy as Markdown =====
-function copyAsMarkdown(){
-  const root = document.querySelector('#tab-text .text-content');
+// ===== Smart Copy =====
+function getActiveTab(){
+  const btn = document.querySelector('.tab-btn.active');
+  return btn ? btn.getAttribute('data-tab') : 'text';
+}
+
+function fabSuccess(){
+  const fab = document.querySelector('.fab-copy');
+  if(!fab) return;
+  fab.classList.add('success');
+  fab.textContent = '✅';
+  setTimeout(() => { fab.classList.remove('success'); updateFabIcon(); }, 1500);
+}
+
+function smartCopy(){
+  const tab = getActiveTab();
+  if(tab === 'diagram') return copyDiagramText();
+  return copyAsMarkdown(tab);
+}
+
+function copyAsMarkdown(tab){
+  const selector = tab === 'mynote' ? '#tab-mynote .mynote-editor' : '#tab-text .text-content';
+  const root = document.querySelector(selector);
   if(!root) return;
   let md = '';
   for(const el of root.children){
@@ -849,25 +979,44 @@ function copyAsMarkdown(){
   }
   md = md.trim();
   
-  // Fallback: 如果 Markdown 转换结果为空，降级复制纯文本
   if(!md){
     const plain = root.innerText.trim();
-    navigator.clipboard.writeText(plain).then(() => {
-      const btn = document.querySelector('.tab-copy-btn');
-      btn.textContent = '📋';
-      setTimeout(() => btn.textContent = '📋', 1500);
-    }).catch(() => alert('复制失败'));
+    navigator.clipboard.writeText(plain).then(fabSuccess).catch(() => alert('复制失败'));
     return;
   }
   
-  navigator.clipboard.writeText(md).then(()=>{
-    const btn = document.querySelector('.tab-copy-btn');
-    const orig = btn.textContent;
-    btn.textContent = '✅';
-    setTimeout(() => btn.textContent = orig, 1500);
-  }).catch(() => {
-    // 二次降级: clipboard API 失败，回退到纯文本
+  navigator.clipboard.writeText(md).then(fabSuccess).catch(() => {
     const plain = root.innerText.trim();
+    navigator.clipboard.writeText(plain).catch(() => alert('复制失败，请手动选中文字复制'));
+  });
+}
+
+function copyDiagramText(){
+  const section = document.querySelector('#tab-diagram');
+  if(!section) return;
+  // Extract text from all diagram sections
+  const parts = [];
+  section.querySelectorAll('.diagram-section, .card').forEach(el => {
+    const title = el.querySelector('h3');
+    const desc = el.querySelector('.diagram-desc');
+    if(title) parts.push('## ' + title.textContent.trim());
+    if(desc) parts.push(desc.textContent.trim());
+    // Extract text from grid cards, step items, tag cards, tree nodes, etc.
+    el.querySelectorAll('.grid-card-title, .step-title, .tag-card-title, .node-label, .node-leaf, .tl-title, .tl-desc, .node-root').forEach(n => {
+      const t = n.textContent.trim();
+      if(t && !parts.includes(t)) parts.push('· ' + t);
+    });
+    // Mermaid diagram — add source as code block
+    el.querySelectorAll('.mermaid').forEach(m => {
+      const src = m.getAttribute('data-mermaid-source');
+      if(src) parts.push('```mermaid\n' + src + '\n```');
+    });
+  });
+  // If nothing structured found, fallback to innerText
+  const text = parts.length > 0 ? parts.join('\n\n') : section.innerText.trim();
+  if(!text){ alert('图解无可复制内容'); return; }
+  navigator.clipboard.writeText(text).then(fabSuccess).catch(() => {
+    const plain = section.innerText.trim();
     navigator.clipboard.writeText(plain).catch(() => alert('复制失败，请手动选中文字复制'));
   });
 }
@@ -996,7 +1145,7 @@ function tableToMd(table){
 }
 
 // ===== My Note (persisted to localStorage) =====
-const MN_KEY='ai_note_mynote_' + encodeURIComponent('大厂如何用 AI Agent 提升数据治理效率 10 倍');
+const MN_KEY='ai_note_mynote_' + encodeURIComponent('大厂AI Agent数据治理10倍提效');
 
 function loadMyNote(){
   const editor=document.getElementById('mynoteEditor');
