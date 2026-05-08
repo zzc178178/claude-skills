@@ -36,6 +36,11 @@ body {
   padding: 0 16px 12px;
   background: linear-gradient(to top, #f0f2f5 70%, transparent);
   pointer-events: none;
+  transform: translateY(0);
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.tab-bar-fixed.tab-hidden {
+  transform: translateY(100%);
 }
 .tab-bar-fixed .tab-nav {
   max-width: 860px;
@@ -159,20 +164,37 @@ body {
   position: relative;
   font-family: inherit;
 }
-.tab-copy-btn {
-  padding: 14px 18px;
+/* ===== FAB Copy Button ===== */
+.fab-copy {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  z-index: 101;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   border: none;
-  border-left: 1px solid #eef0f4;
-  background: transparent;
-  font-size: 0.8rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 1.3rem;
   cursor: pointer;
-  color: #8896ab;
-  font-family: inherit;
-  transition: all 0.3s;
-  white-space: nowrap;
-  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.tab-copy-btn:hover { color: #667eea; background: #f8f9fb; }
+.fab-copy:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(102,126,234,0.5);
+}
+.fab-copy:active {
+  transform: scale(0.95);
+}
+.fab-copy.success {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  box-shadow: 0 4px 16px rgba(52,211,153,0.4);
+}
 .tab-btn::after {
   content: '';
   position: absolute;
@@ -375,6 +397,12 @@ tr:hover td { background: #f8f9fb; }
 }
 .diagram-section .mermaid svg {
   max-width: 100%;
+}
+.mermaid-save-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-top: 4px;
 }
 
 /* ===== CSS Tree (复用树形结构：选型/分类/层级) ===== */
@@ -761,7 +789,7 @@ tr:hover td { background: #f8f9fb; }
 @media (max-width: 380px) {
   .tab-btn { font-size: 0.78rem; padding: 10px 6px; }
   .tab-btn .icon { display: none; }
-  .tab-copy-btn { padding: 10px 10px; }
+  .fab-copy { width: 42px; height: 42px; right: 14px; bottom: 80px; font-size: 1.1rem; }
 }
 </style>
 </head>
@@ -789,9 +817,11 @@ tr:hover td { background: #f8f9fb; }
       <button class="tab-btn" data-tab="mynote" role="tab" aria-selected="false">
         <span class="icon">✏️</span>随手记
       </button>
-      <button class="tab-copy-btn" onclick="event.stopPropagation();copyAsMarkdown()" title="复制文字为 Markdown">📋</button>
     </div>
   </div>
+
+  <!-- ===== FAB Copy Button ===== -->
+  <button class="fab-copy" onclick="smartCopy()" title="复制当前内容">📋</button>
 
   <!-- ===== Text Tab ===== -->
   <div class="tab-content text-tab active" id="tab-text" role="tabpanel">
@@ -850,10 +880,16 @@ function renderDiagrams() {
   document.querySelectorAll('#tab-diagram .mermaid').forEach((el, idx) => {
     if (el.querySelector('svg')) return;
     const code = el.textContent.trim();
+    el.setAttribute('data-mermaid-source', code);
     const id = 'mermaid-' + Date.now() + '-' + idx;
     const retryCount = parseInt(el.dataset.retry || '0');
     mermaid.render(id, code).then(({ svg }) => {
       el.innerHTML = svg;
+      // Add save hint below Mermaid SVG
+      const hint = document.createElement('div');
+      hint.className = 'mermaid-save-hint';
+      hint.textContent = '💡 长按图片可保存';
+      el.parentNode.insertBefore(hint, el.nextSibling);
     }).catch(err => {
       console.error('Mermaid render error (attempt ' + (retryCount + 1) + '):', err);
       if (retryCount < 1) {
@@ -867,7 +903,32 @@ function renderDiagrams() {
   });
 }
 
+// ===== Scroll-to-hide Tab Bar =====
+(function(){
+  const bar = document.querySelector('.tab-bar-fixed');
+  if(!bar) return;
+  let lastY = window.scrollY, ticking = false;
+  window.addEventListener('scroll', function(){
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){
+      const y = window.scrollY;
+      if(y > lastY && y > 60) bar.classList.add('tab-hidden');
+      else bar.classList.remove('tab-hidden');
+      lastY = y;
+      ticking = false;
+    });
+  }, {passive:true});
+})();
+
 // Tab switching
+function updateFabIcon(){
+  const fab = document.querySelector('.fab-copy');
+  if(!fab) return;
+  fab.textContent = '📋';
+  fab.title = '复制为文字';
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
@@ -883,12 +944,33 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (tabId === 'mynote') {
       loadMyNote();
     }
+    updateFabIcon();
   });
 });
 
-// ===== Copy as Markdown =====
-function copyAsMarkdown(){
-  const root = document.querySelector('#tab-text .text-content');
+// ===== Smart Copy =====
+function getActiveTab(){
+  const btn = document.querySelector('.tab-btn.active');
+  return btn ? btn.getAttribute('data-tab') : 'text';
+}
+
+function fabSuccess(){
+  const fab = document.querySelector('.fab-copy');
+  if(!fab) return;
+  fab.classList.add('success');
+  fab.textContent = '✅';
+  setTimeout(() => { fab.classList.remove('success'); updateFabIcon(); }, 1500);
+}
+
+function smartCopy(){
+  const tab = getActiveTab();
+  if(tab === 'diagram') return copyDiagramText();
+  return copyAsMarkdown(tab);
+}
+
+function copyAsMarkdown(tab){
+  const selector = tab === 'mynote' ? '#tab-mynote .mynote-editor' : '#tab-text .text-content';
+  const root = document.querySelector(selector);
   if(!root) return;
   let md = '';
   for(const el of root.children){
@@ -896,25 +978,44 @@ function copyAsMarkdown(){
   }
   md = md.trim();
   
-  // Fallback: 如果 Markdown 转换结果为空，降级复制纯文本
   if(!md){
     const plain = root.innerText.trim();
-    navigator.clipboard.writeText(plain).then(() => {
-      const btn = document.querySelector('.tab-copy-btn');
-      btn.textContent = '📋';
-      setTimeout(() => btn.textContent = '📋', 1500);
-    }).catch(() => alert('复制失败'));
+    navigator.clipboard.writeText(plain).then(fabSuccess).catch(() => alert('复制失败'));
     return;
   }
   
-  navigator.clipboard.writeText(md).then(()=>{
-    const btn = document.querySelector('.tab-copy-btn');
-    const orig = btn.textContent;
-    btn.textContent = '✅';
-    setTimeout(() => btn.textContent = orig, 1500);
-  }).catch(() => {
-    // 二次降级: clipboard API 失败，回退到纯文本
+  navigator.clipboard.writeText(md).then(fabSuccess).catch(() => {
     const plain = root.innerText.trim();
+    navigator.clipboard.writeText(plain).catch(() => alert('复制失败，请手动选中文字复制'));
+  });
+}
+
+function copyDiagramText(){
+  const section = document.querySelector('#tab-diagram');
+  if(!section) return;
+  // Extract text from all diagram sections
+  const parts = [];
+  section.querySelectorAll('.diagram-section, .card').forEach(el => {
+    const title = el.querySelector('h3');
+    const desc = el.querySelector('.diagram-desc');
+    if(title) parts.push('## ' + title.textContent.trim());
+    if(desc) parts.push(desc.textContent.trim());
+    // Extract text from grid cards, step items, tag cards, tree nodes, etc.
+    el.querySelectorAll('.grid-card-title, .step-title, .tag-card-title, .node-label, .node-leaf, .tl-title, .tl-desc, .node-root').forEach(n => {
+      const t = n.textContent.trim();
+      if(t && !parts.includes(t)) parts.push('· ' + t);
+    });
+    // Mermaid diagram — add source as code block
+    el.querySelectorAll('.mermaid').forEach(m => {
+      const src = m.getAttribute('data-mermaid-source');
+      if(src) parts.push('```mermaid\n' + src + '\n```');
+    });
+  });
+  // If nothing structured found, fallback to innerText
+  const text = parts.length > 0 ? parts.join('\n\n') : section.innerText.trim();
+  if(!text){ alert('图解无可复制内容'); return; }
+  navigator.clipboard.writeText(text).then(fabSuccess).catch(() => {
+    const plain = section.innerText.trim();
     navigator.clipboard.writeText(plain).catch(() => alert('复制失败，请手动选中文字复制'));
   });
 }
